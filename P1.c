@@ -7,14 +7,21 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <string.h>
+
 #include <sys/sem.h>
+
+#include <sys/shm.h>
+
+
 
 int main(int argc, char **argv) {
 	/* code */
   printf("Client ID: %ld\nP1\n", (long)getpid());
 
-  int sem_id = semget((key_t)11, 1, 0666 | IPC_CREAT);
+  int sem_id = semget((key_t)1111, 1, 0666 | IPC_CREAT);
   semctl(sem_id, 0, SETVAL, 1);
+
+  int shm_id = shmget((key_t)2211, 256, 0666 | IPC_CREAT);
 
   // struct sembuf t={0,1,0};  //up
   // semop(sem_id, &t, 1);
@@ -35,6 +42,9 @@ int main(int argc, char **argv) {
         //CRITICAL SECTION /*
       char input[256];
       scanf("%s\n", input);
+      char *data = shmat(shm_id, NULL, 0);
+      strcpy(data, input);
+
         //CRITICAL SECTION */
       {struct sembuf t={0,1,0};  //up
       semop(sem_id, &t, 1);}
