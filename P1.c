@@ -41,7 +41,8 @@ int main(int argc, char **argv) {
 
         //CRITICAL SECTION /*
       char input[256];
-      scanf("%s\n", input);
+      printf("give text from p1: ");
+      scanf("%s", input);
       char *data = shmat(shm_id, NULL, 0);
       strcpy(data, input);
 
