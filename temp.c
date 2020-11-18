@@ -12,6 +12,7 @@
 
 #include <sys/shm.h>
 int main(int argc, char **argv) {
-  int shm_id_one = shmget((key_t)2212, 1, 0666 | IPC_CREAT);
-	strcpy(shmat(shm_id_one, NULL, 0), "\0");
+  char data;
+  strcpy(&data, "1");
+  printf("%d\n", strlen(&data));
 }

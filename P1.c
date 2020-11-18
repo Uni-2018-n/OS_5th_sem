@@ -12,6 +12,7 @@
 
 #include <sys/shm.h>
 
+#include <sys/wait.h>
 
 
 int main(int argc, char **argv) {
@@ -43,13 +44,26 @@ int main(int argc, char **argv) {
       char input[256];
       printf("give text from p1: ");
       scanf("%s", input);
-      char *data = shmat(shm_id, NULL, 0);
-      strcpy(data, input);
+
+      char *data = (char*)shmat(shm_id, NULL, 0);
+      if(data == (char*)(-1)){
+        printf("P1 ERROR\n");
+      }else{
+        strcpy(data, input);
+      }
+      shmdt(data);
 
         //CRITICAL SECTION */
       {struct sembuf t={0,1,0};  //up
       semop(sem_id, &t, 1);}
+      if(strcmp(input, "TERM")==0){
+        break;
+      }
     }
+    int status;
+    waitpid(pid, &status, 0);
+    semctl(sem_id, 0, IPC_RMID, 0);
+    shmctl(shm_id, IPC_RMID, NULL);
 
   }
 
