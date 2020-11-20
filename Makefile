@@ -19,3 +19,7 @@ clean :
 	ipcrm -S 0x1587
 	ipcrm -S 0x458
 	ipcrm -S 0xcf0
+	ipcrm -S 0x1588
+	ipcrm -S 0x19d4
+	ipcrm -M 0x1e20
+

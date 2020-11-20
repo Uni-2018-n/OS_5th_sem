@@ -21,12 +21,8 @@ confirm:
 #include "lib.h"
 
 int send_message(int, char*);
-int resend_message(int, char*, char*);
-int wait_confirmation(int, int*);
-int receive_message(int, char*);
+int receive_message(int, char*, int);
 int send_confirmation(int, int*);
-
-char input[256];
 
 int main(int argc, char **argv) {
   printf("**P1  Client ID: %ld\n", (long)getpid());
@@ -64,8 +60,9 @@ int main(int argc, char **argv) {
     *data_confirm = 0; // no need for sem cause process aint started yet
   }
 
-  int sem_id_confirm = semget((key_t)5511, 1, 0666 | IPC_CREAT);
-  semctl(sem_id, 0, SETVAL, 1);
+    int sem_second_ready = semget((key_t)5511, 1, 0666 | IPC_CREAT);
+    semctl(sem_second_ready, 0, SETVAL, 0);
+
 
   int pid = fork();
   if(pid < 0){
@@ -84,22 +81,14 @@ int main(int argc, char **argv) {
       step = send_message(sem_id, data_send);
       break;
       case 1:
-      step = wait_confirmation(sem_id_confirm, data_confirm);
-      if(step == 1){
-        step = resend_message(sem_id, data_send, input);
-      }
-      break;
-      case 2:
-      step = receive_message(sem_id, data_receive);
-      break;
-      case 3:
-      step = send_confirmation(sem_id_confirm, data_confirm);
+      step = receive_message(sem_id, data_receive, sem_second_ready);
       break;
     }
   }
 }
 
 int send_message(int sem_id, char* data){
+  char input[256];
   sem_down(sem_id);
 
   printf("Give input from P1:");
@@ -110,37 +99,12 @@ int send_message(int sem_id, char* data){
   return 1;
 }
 
-int resend_message(int sem_id, char* data, char* input){
+int receive_message(int sem_id, char* data, int sem_second){
+  printf("P2 respond: ");
+  fflush(stdout);
+  sem_down(sem_second);
   sem_down(sem_id);
-
-  strcpy(data, input);
-
+  printf("%s\n", data);
   sem_up(sem_id);
-  return 1;
-}
-
-int wait_confirmation(int sem_id, int* data){
-  sem_up(sem_id);
-  while(1){
-    switch (*data) {
-      case 15:
-        printf("\t\t**Message Sent!**\n");
-        sem_down(sem_id);
-        return 2;
-        break;
-      case 1:
-        printf("\t\t**Message Failed, Resending...**\n");
-        sem_down(sem_id);
-        return 1;
-        break;
-    }
-}
-}
-
-int receive_message(int sem_id, char* data){
-
-}
-
-int send_confirmation(int sem_id, int* data){
-
+  return 0;
 }

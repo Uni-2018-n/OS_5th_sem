@@ -1,8 +1,14 @@
 #include "lib.h"
 
-int receive_from_p1(int, int, char*, int, char*);
-int return_confirmation(int, int*, int, int*);
+int receive_from_p1(int, char*, int, char*, int);
+int resend_message(int, char*, int);
+int get_confirmation(int, int*);
+int receive_from_chan(int, char*, int, int, char*);
+int confirm_to_chan(int, int*);
+int send_to_p1(int, char*, int);
 
+char input_from_p1[256];
+char input_from_chan[256];
 int main(int argc, char **argv) {
   int sem_p1_id = semget((key_t)1111, 1, 0666);
 
@@ -14,20 +20,22 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  int sem_confirm_p1 = semget((key_t)5511, 1, 0666);
+  int sem_second_ready = semget((key_t)5511, 1, 0666);
 
-  int shm_confirm_from_p1 = shmget((key_t)4411, 4, 0666);
+  int shm_id_receive = shmget((key_t)3311, 256, 0666 | IPC_CREAT);
 
-  int* data_confirm_from_p1 = (int*)shmat(shm_confirm_from_p1, NULL, 0);
-  if(data_confirm_from_p1 == (int*)(-1)){
-    printf("**Error connecting with Shared Memory- Confirm from P1**\n");
+  char* data_to_p1 = (char*)shmat(shm_id_receive, NULL, 0);
+  if(data_to_p1 == (char*)(-1)){
+    printf("**Error Connecting With Shared Memory- data to p1**\n");
     exit(1);
+  }else{
+    strcpy(data_to_p1, ""); // no need for sem cause process aint started yet
   }
-
 
 
   int sem_send_chan = semget((key_t)1112, 1, 0666 | IPC_CREAT);
   semctl(sem_send_chan, 0, SETVAL, 1);
+  // sem_down(sem_send_chan);
 
   int shm_send_chan = shmget((key_t)2212, 256, 0666 | IPC_CREAT);
 
@@ -49,7 +57,7 @@ int main(int argc, char **argv) {
 
   int* data_confirm_chan = (int*)shmat(shm_confirm_chan, NULL, 0);
   if(data_confirm_chan == (int*)(-1)){
-    printf("**Error connecting with Shared Memory- Confirm chan**\n");
+    printf("**Error connecting with Shared Memory- Confirm p1->p2 chan**\n");
     exit(1);
   }else{
     sem_down(sem_confirm_chan);
@@ -57,6 +65,20 @@ int main(int argc, char **argv) {
     sem_up(sem_confirm_chan);
   }
 
+  int sem_flag_chan = semget((key_t)5512, 1, 0666 | IPC_CREAT);
+  semctl(sem_flag_chan, 0, SETVAL, 0);
+
+
+  int sem_receive_chan = semget((key_t)6612, 1, 0666 | IPC_CREAT);
+  semctl(sem_receive_chan, 0, SETVAL, 1);
+
+  int shm_receive_chan = shmget((key_t)7712, 256, 0666 | IPC_CREAT);
+
+  char* data_receive_chan = (char*)shmat(shm_receive_chan, NULL, 0);
+  if(data_receive_chan == (char*)(-1)){
+    printf("**Error connecting with shared memory- receive chan");
+    exit(1);
+  }
 
 
 
@@ -67,16 +89,24 @@ int main(int argc, char **argv) {
   while(1){
     switch (step) {
       case 0: //receive from p1
-        step = receive_from_p1(sem_p1_id, sem_confirm_p1, data_from_p1, sem_send_chan, data_send_chan);
+        step = receive_from_p1(sem_p1_id, data_from_p1, sem_send_chan, data_send_chan, sem_flag_chan);
         break;
-      case 1: //send confirmation to p1
-        step = return_confirmation(sem_confirm_p1, data_confirm_from_p1, sem_confirm_chan, data_confirm_chan);
+      case 1: //retrive confirmation
+        step = get_confirmation(sem_confirm_chan, data_confirm_chan);
         break;
-      case 2: //receive from chan
-
+      case 2: //retrive from chan
+        step = receive_from_chan(sem_p1_id, data_to_p1, sem_second_ready, sem_receive_chan, data_receive_chan);
         break;
-      case 3: //send confirmation to chan
-
+      case 3: //send confirmation
+        step = confirm_to_chan(sem_confirm_chan, data_confirm_chan);
+        break;
+      case 4://send to p1
+        step = send_to_p1(sem_p1_id, data_to_p1, sem_second_ready);
+        break;
+      case 55://resend option
+        step = resend_message(sem_send_chan, data_send_chan, sem_flag_chan);
+        break;
+      case 66://from case2 i retrived falty need to resend
         break;
 
     }
@@ -84,24 +114,59 @@ int main(int argc, char **argv) {
 }
 
 
-int receive_from_p1(int sem_p1, int sem_p1_confirm, char* data_p1, int sem_chan, char* data_chan){
+int receive_from_p1(int sem_p1, char* data_p1, int sem_chan, char* data_chan, int flag){
   sem_down(sem_p1);
-    sem_down(sem_p1_confirm);
     sem_down(sem_chan);
+    sem_up(flag);
+    // printf("gone here\n");
+      strcpy(input_from_p1, data_p1);
       strcpy(data_chan, data_p1);
     sem_up(sem_chan);
   sem_up(sem_p1);
   return 1;
 }
 
-int return_confirmation(int sem_p1, int* confirm_p1, int sem_chan, int* confirm_chan){
-  printf("\t\t**Waiting for confirmation**\n");
+int resend_message(int sem_id, char* data, int flag){
+  sem_down(sem_id);
+  sem_up(flag);
+    strcpy(data, input_from_p1);
+  sem_up(sem_id);
+  return 1;
+}
+
+int get_confirmation(int sem_chan, int* confirm_chan){
+  // printf("\t\t**Waiting for confirmation**\n");
   sem_down(sem_chan);
-  *confirm_p1 = *confirm_chan;
-  if(*confirm_p1 == 1){
+  // *confirm_p1 = *confirm_chan;
+  if(*confirm_chan == 1){
     sem_up(sem_chan);
-    return 0;
+    return 55;
   }
   sem_up(sem_chan);
   return 2;
+}
+
+int receive_from_chan(int sem_p1, char* data_to_p1, int second_flag, int sem_chan, char* data_from_chan){
+  sem_down(sem_chan);
+  strcpy(input_from_chan, data_from_chan);
+  sem_up(sem_chan);
+  return 2;
+}
+
+int confirm_to_chan(int sem_chan, int* data_chan){
+  // if all ok send 15 and return 4 else return 66 and return another
+  sem_down(sem_chan);
+    *data_chan = 15;
+  sem_up(sem_chan);
+  return 4;
+}
+
+int send_to_p1(int sem_p1, char* data, int sem_flag){
+  sem_down(sem_p1);
+  sem_up(sem_flag);
+
+  strcpy(data, input_from_chan);
+
+  sem_up(sem_p1);
+  return 0;
 }
