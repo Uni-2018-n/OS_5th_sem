@@ -20,9 +20,8 @@ confirm:
 
 #include "lib.h"
 
-int send_message(int, char*, int);
-int receive_message(int, char*, int);
-int send_confirmation(int, int*);
+returned_value send_message(int, char*, int);
+returned_value receive_message(int, char*, int);
 
 int main(int argc, char **argv) {
   printf("**P1  Client ID: %ld\n", (long)getpid());
@@ -77,37 +76,69 @@ int main(int argc, char **argv) {
   }
 
   int step = 0;
+
+  returned_value temp;
   while(1){
     switch (step) {
       case 0:
-      step = send_message(sem_id, data_send, sem_flag);
-      break;
+      temp = send_message(sem_id, data_send, sem_flag);
+      step = temp.step;
+      if(strcmp(temp.input, "TERM\n") == 0){
+        break;
+      }
+      continue;
       case 1:
-      step = receive_message(sem_id, data_receive, sem_second_ready);
-      break;
+      temp = receive_message(sem_id, data_receive, sem_second_ready);
+      step = temp.step;
+      if(strcmp(temp.input, "TERM\n") == 0){
+        break;
+      }
+      continue;
     }
+    break;
   }
+  int status;
+  waitpid(pid, &status, 0);
+  semctl(sem_id, 0, IPC_RMID, 0);
+  shmdt(data_send);
+  shmctl(shm_id_send, IPC_RMID, NULL);
+
+  shmdt(data_receive);
+  shmctl(shm_id_receive, IPC_RMID, NULL);
+
+  shmdt(data_confirm);
+  shmctl(shm_id_confirm, IPC_RMID, NULL);
+
+  semctl(sem_second_ready, 0, IPC_RMID, 0);
+
+  semctl(sem_flag, 0, IPC_RMID, 0);
+  return 0;
 }
 
-int send_message(int sem_id, char* data, int flag){
-  char input[256];
+returned_value send_message(int sem_id, char* data, int flag){
+  returned_value temp;
   sem_down(sem_id);
   sem_up(flag);
 
   printf("Give input from P1:");
-  scanf("%s", input);
-  strcpy(data, input);
+  fflush(stdout);
+  fgets(temp.input, 256, stdin);
+  strcpy(data, temp.input);
+  temp.step = 1;
 
   sem_up(sem_id);
-  return 1;
+  return temp;
 }
 
-int receive_message(int sem_id, char* data, int sem_second){
+returned_value receive_message(int sem_id, char* data, int sem_second){
+  returned_value temp;
   printf("P2 respond: ");
   fflush(stdout);
   sem_down(sem_second);
   sem_down(sem_id);
-  printf("%s\n", data);
+  printf("%s", data);
+  strcpy(temp.input, data);
   sem_up(sem_id);
-  return 0;
+  temp.step =0;
+  return temp;
 }

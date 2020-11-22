@@ -35,7 +35,6 @@ int main(int argc, char **argv) {
 
   int sem_send_chan = semget((key_t)1112, 1, 0666 | IPC_CREAT);
   semctl(sem_send_chan, 0, SETVAL, 1);
-  // sem_down(sem_send_chan);
 
   int shm_send_chan = shmget((key_t)2212, 256, 0666 | IPC_CREAT);
 
@@ -59,15 +58,10 @@ int main(int argc, char **argv) {
   if(data_confirm_chan == (int*)(-1)){
     printf("**Error connecting with Shared Memory- Confirm p1->p2 chan**\n");
     exit(1);
-  }else{
-    // sem_down(sem_confirm_chan);
-    // *data_confirm_chan = 120;
-    // sem_up(sem_confirm_chan);
   }
 
   int sem_flag_confirm_chan_re = semget((key_t)9912, 1, 0666 | IPC_CREAT);
   semctl(sem_flag_confirm_chan_re, 0, SETVAL, 0);
-  // sem_down(sem_flag_confirm_chan_re);
 
   int sem_flag_chan = semget((key_t)5512, 1, 0666 | IPC_CREAT);
   semctl(sem_flag_chan, 0, SETVAL, 0);
@@ -98,46 +92,71 @@ int main(int argc, char **argv) {
     switch (step) {
       case 0: //receive from p1
         step = receive_from_p1(sem_p1_id, data_from_p1, sem_send_chan, data_send_chan, sem_flag_chan, sem_flag);
-        break;
+        continue;
       case 1: //retrive confirmation
         step = wait_confirmation_from_chan(sem_confirm_chan, data_confirm_chan);
-        break;
+        if(strcmp(input_from_p1, "TERM\n") == 0){
+          break;
+        }
+        continue;
       case 2: //retrive from chan
         step = receive_from_chan(sem_receive_chan, data_receive_chan, sem_flag_chan_re);
-        break;
+        continue;
       case 3: //send confirmation
         step = confirm_to_chan(sem_confirm_chan, data_confirm_chan, sem_flag_confirm_chan_re);
-        break;
+        continue;
       case 4://send to p1
         step = send_to_p1(sem_p1_id, data_to_p1, sem_second_ready);
-        break;
+        if(strcmp(input_from_chan, "TERM\n") ==0){
+          break;
+        }
+        continue;
       case 55://resend option
         step = resend_message(sem_send_chan, data_send_chan, sem_flag_chan);
-        break;
+        continue;
       case 66://from case2 i retrived falty need to resend
-        break;
 
+        continue;
     }
+    break;
   }
+  shmdt(data_to_p1);
+  shmctl(shm_id_receive, IPC_RMID, NULL);
+
+  semctl(sem_send_chan, 0, IPC_RMID, 0);
+
+  shmdt(data_send_chan);
+  shmctl(shm_send_chan, IPC_RMID, NULL);
+
+  semctl(sem_confirm_chan, 0, IPC_RMID, 0);
+
+  shmdt(data_confirm_chan);
+  shmctl(shm_confirm_chan, IPC_RMID, NULL);
+
+  semctl(sem_flag_confirm_chan_re, 0, IPC_RMID, 0);
+
+  semctl(sem_flag_chan, 0, IPC_RMID, 0);
+
+  semctl(sem_receive_chan, 0, IPC_RMID, 0);
+
+  shmdt(data_receive_chan);
+  shmctl(shm_receive_chan, IPC_RMID, NULL);
+
+  semctl(sem_flag_chan_re, 0, IPC_RMID, 0);
+  return 0;
 }
 
 
 int receive_from_p1(int sem_p1, char* data_p1, int sem_chan, char* data_chan, int flag, int flag_p1){
   sem_down(flag_p1);
-  sem_down(sem_p1);
-
   sem_down(sem_chan);
   sem_up(flag);
-
+  sem_down(sem_p1);
       strcpy(input_from_p1, data_p1);
       strcpy(data_chan, data_p1);
       strcpy(data_p1, "WRONG1");
-      // sem_up(flag);
-      // sem_down(flag);
-      // printf("test\n");
     sem_up(sem_chan);
   sem_up(sem_p1);
-  // printf("im here\n");
   return 1;
 }
 
@@ -150,9 +169,7 @@ int resend_message(int sem_id, char* data, int flag){
 }
 
 int wait_confirmation_from_chan(int sem_chan, int* confirm_chan){
-  // printf("\t\t**Waiting for confirmation**\n");
   sem_down(sem_chan);
-  // *confirm_p2 = *confirm_chan;
   if(*confirm_chan == 1){
     sem_up(sem_chan);
     return 55;
@@ -182,9 +199,7 @@ int confirm_to_chan(int sem_chan, int* data_chan, int flag){
 int send_to_p1(int sem_p1, char* data, int sem_flag){
   sem_down(sem_p1);
   sem_up(sem_flag);
-
-  strcpy(data, input_from_chan);
-
+    strcpy(data, input_from_chan);
   sem_up(sem_p1);
   return 0;
 }

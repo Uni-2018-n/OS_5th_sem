@@ -14,6 +14,11 @@
 
 #include <sys/wait.h>
 
+typedef struct rv{
+  int step;
+  char input[256];
+  int confirm;
+}returned_value;
 
 void sem_up(int sem_id);
 void sem_down(int sem_id);
