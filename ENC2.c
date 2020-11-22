@@ -1,6 +1,6 @@
 #include "lib.h"
 
-int receive_from_p2(int, char*, int, char*, int);
+int receive_from_p2(int, char*, int, char*, int, int);
 int resend_message(int, char*, int);
 int wait_confirmation_from_chan(int, int*);
 int receive_from_chan(int, char*, int);
@@ -71,6 +71,7 @@ int main(int argc, char **argv) {
 
   int sem_flag_chan = semget((key_t)5522, 1, 0666 | IPC_CREAT);
   semctl(sem_flag_chan, 0, SETVAL, 0);
+  sem_up(sem_flag_chan);
 
 
   int sem_receive_chan = semget((key_t)6622, 1, 0666 | IPC_CREAT);
@@ -89,14 +90,14 @@ int main(int argc, char **argv) {
   sem_down(sem_flag_chan_re);
 
 
-
+  int sem_flag = semget((key_t)22221, 1, 0666);
 
 
 	int step = 2;
   while(1){
     switch (step) {
       case 0: //receive from p2
-        step = receive_from_p2(sem_p2_id, data_from_p2, sem_send_chan, data_send_chan, sem_flag_chan);
+        step = receive_from_p2(sem_p2_id, data_from_p2, sem_send_chan, data_send_chan, sem_flag_chan, sem_flag);
         break;
       case 1: //retrive confirmation
         step = wait_confirmation_from_chan(sem_confirm_chan, data_confirm_chan);
@@ -121,12 +122,17 @@ int main(int argc, char **argv) {
 }
 
 
-int receive_from_p2(int sem_p2, char* data_p2, int sem_chan, char* data_chan, int flag){
+int receive_from_p2(int sem_p2, char* data_p2, int sem_chan, char* data_chan, int flag, int flag_p2){
+  sem_down(flag_p2);
   sem_down(sem_p2);
-    sem_down(sem_chan);
-    sem_up(flag);
+
+  sem_down(sem_chan);
+  sem_down(flag);
+    // printf("sending...\n");
       strcpy(input_from_p2, data_p2);
       strcpy(data_chan, data_p2);
+      strcpy(data_p2, "WRONG2");
+      // sem_down(flag);
     sem_up(sem_chan);
   sem_up(sem_p2);
   return 1;
@@ -155,8 +161,8 @@ int wait_confirmation_from_chan(int sem_chan, int* confirm_chan){
 int receive_from_chan(int sem_chan, char* data_from_chan, int flag){
   sem_down(flag);
   sem_down(sem_chan);
-  // printf("got message\n");
   strcpy(input_from_chan, data_from_chan);
+  strcpy(data_from_chan, "WRONG2");
   sem_up(sem_chan);
   return 3;
 }
@@ -165,7 +171,6 @@ int confirm_to_chan(int sem_chan, int* data_chan, int flag){
   // if all ok send 15 and return 4 else return 66 and return another
   sem_down(sem_chan);
   sem_up(flag);
-  printf("im here\n");
     *data_chan = 15;
   sem_up(sem_chan);
   return 4;

@@ -7,7 +7,7 @@ typedef struct rv{
   char input[256];
   int confirm;
 }returned_value;
-
+int something_bad = 1;
 returned_value receive_from_enc1(int, char*, int);
 int send_to_enc2(int, char*, int, char*);
 returned_value wait_confirmation_from_enc2(int, int*, int);
@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  int sem_flag_enc1_re = semget((key_t)11122, 1, 0666);
+  int sem_flag_enc1_re = semget((key_t)11112, 1, 0666);
 
   int sem_flag_confirm_enc1 = semget((key_t)9912, 1, 0666);
 
@@ -182,7 +182,7 @@ int main(int argc, char **argv) {
         confirmation = temp.confirm;
       break;
       case 7: //send confirmation to enc2
-        printf("**Step 8: sending confirmation to enc1**\n");
+        printf("**Step 8: sending confirmation to enc2**\n");
         step = send_confirmation_to_enc2(sem_confirm_enc2_re, data_confirm_enc2_re, confirmation, sem_flag_confirm_enc2_re);
       break;
     }
@@ -192,11 +192,21 @@ int main(int argc, char **argv) {
 
 // enc1 -> enc2
 returned_value receive_from_enc1(int sem_id, char* data, int flag){
+  // sleep(1);
   sem_down(flag);
+  if(something_bad){
+    sem_down(flag);
+    something_bad = 0;
+  }
+  printf("im here\n");
+  // sem_down(flag);
   sem_down(sem_id);
+  // sem_up(flag);
     printf("from p1: %s\n", data);
     returned_value temp;
     strcpy(temp.input, data);
+    strcpy(data, "WRONG3");
+    // sem_down(flag);
   sem_up(sem_id);
   temp.step= 1;
   return temp;
@@ -234,16 +244,23 @@ int send_confirmation_to_enc1(int sem_id, int* data, int confirmation, int flag)
 
 
 
-
+int something_bad_2 = 1;
 // enc2 -> enc1
 returned_value receive_from_enc2(int sem_id, char* data, int flag){
   sem_down(flag);
+  if(something_bad_2){
+    sem_down(flag);
+    something_bad_2 = 0;
+  }
   sem_down(sem_id);
     printf("from p2: %s\n", data);
     returned_value temp;
     strcpy(temp.input, data);
+    strcpy(data, "WRONG4");
+    // sem_up(flag);
   sem_up(sem_id);
   temp.step= 5;
+  sem_down(flag);
   return temp;
 }
 

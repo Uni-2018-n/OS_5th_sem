@@ -16,7 +16,6 @@ clean :
 	ipcrm -M 0x8a4
 	ipcrm -M 0x113c
 	ipcrm -M 0x1e20
-	ipcrm -M 0x226c
 	ipcrm -M 0x8ad
 	ipcrm -M 0xcf9
 	ipcrm -M 0x1145
@@ -40,4 +39,5 @@ clean :
 	ipcrm -S 0x2b68
 	ipcrm -S 0x26b8
 	ipcrm -S 0x2b72
-
+	ipcrm -S 0x56cd
+	ipcrm -S 0x56c3

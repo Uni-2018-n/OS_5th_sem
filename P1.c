@@ -20,7 +20,7 @@ confirm:
 
 #include "lib.h"
 
-int send_message(int, char*);
+int send_message(int, char*, int);
 int receive_message(int, char*, int);
 int send_confirmation(int, int*);
 
@@ -63,6 +63,8 @@ int main(int argc, char **argv) {
     int sem_second_ready = semget((key_t)5511, 1, 0666 | IPC_CREAT);
     semctl(sem_second_ready, 0, SETVAL, 0);
 
+    int sem_flag = semget((key_t)22211, 1, 0666 | IPC_CREAT);
+    semctl(sem_flag, 0, SETVAL, 0);
 
   int pid = fork();
   if(pid < 0){
@@ -78,7 +80,7 @@ int main(int argc, char **argv) {
   while(1){
     switch (step) {
       case 0:
-      step = send_message(sem_id, data_send);
+      step = send_message(sem_id, data_send, sem_flag);
       break;
       case 1:
       step = receive_message(sem_id, data_receive, sem_second_ready);
@@ -87,9 +89,10 @@ int main(int argc, char **argv) {
   }
 }
 
-int send_message(int sem_id, char* data){
+int send_message(int sem_id, char* data, int flag){
   char input[256];
   sem_down(sem_id);
+  sem_up(flag);
 
   printf("Give input from P1:");
   scanf("%s", input);
