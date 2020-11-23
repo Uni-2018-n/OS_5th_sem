@@ -14,11 +14,21 @@
 
 #include <sys/wait.h>
 
+#include <openssl/md5.h>
+
+
 typedef struct rv{
   int step;
   char input[256];
   int confirm;
+  char hash[MD5_DIGEST_LENGTH];
 }returned_value;
+
+typedef struct is{
+  char input[256];
+  char hash[MD5_DIGEST_LENGTH];
+}info_struct;
+
 
 void sem_up(int sem_id);
 void sem_down(int sem_id);

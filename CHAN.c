@@ -1,23 +1,32 @@
 #include "lib.h"
-
-returned_value receive_from_enc1(int, char*, int);
-int send_to_enc2(int, char*, int, char*);
+#include <time.h>
+returned_value receive_from_enc1(int, info_struct*, int);
+int send_to_enc2(int, info_struct*, int, info_struct*);
 returned_value wait_confirmation_from_enc2(int, int*, int);
 int send_confirmation_to_enc1(int, int*, int, int);
 
-returned_value receive_from_enc2(int, char*, int);
-int send_to_enc1(int, char*, int, char*);
+returned_value receive_from_enc2(int, info_struct*, int);
+int send_to_enc1(int, info_struct*, int, info_struct*);
 returned_value wait_confirmation_from_enc1(int, int*, int);
 int send_confirmation_to_enc2(int, int*, int, int);
 
+int probability;
 int main(int argc, char **argv) {
-
+  if(argc > 1){
+    printf("wrong arguments, please give 0 or non arguments\n");
+    return 0;
+  }else if(argc == 0){
+    probability = 50;
+  }else{
+    probability = atoi(argv[0]);
+  }
+  srand(time(NULL));
   int sem_receive_enc1 = semget((key_t)1112, 1, 0666);
 
-  int shm_receive_enc1 = shmget((key_t)2212, 256, 0666);
+  int shm_receive_enc1 = shmget((key_t)2212, sizeof(info_struct), 0666);
 
-  char* data_receive_enc1 = (char*)shmat(shm_receive_enc1, NULL, 0);
-  if(data_receive_enc1 == (char*)(-1)){
+  info_struct* data_receive_enc1 = (info_struct*)shmat(shm_receive_enc1, NULL, 0);
+  if(data_receive_enc1 == (info_struct*)(-1)){
     printf("**Error connecting with shared memory- receive enc1**\n");
     exit(1);
   }
@@ -41,10 +50,10 @@ int main(int argc, char **argv) {
 
   int sem_send_enc2 = semget((key_t)6622, 1, 0666);
 
-  int shm_send_enc2 = shmget((key_t)7722, 256, 0666);
+  int shm_send_enc2 = shmget((key_t)7722, sizeof(info_struct), 0666);
 
-  char* data_send_enc2 = (char*)shmat(shm_send_enc2, NULL, 0);
-  if(data_send_enc2 == (char*)(-1)){
+  info_struct* data_send_enc2 = (info_struct*)shmat(shm_send_enc2, NULL, 0);
+  if(data_send_enc2 == (info_struct*)(-1)){
     printf("**Error connecting with shared memory- receive chan");
     exit(1);
   }
@@ -75,10 +84,10 @@ int main(int argc, char **argv) {
   //enc2->enc1
   int sem_receive_enc2 = semget((key_t)1122, 1, 0666);
 
-  int shm_receive_enc2 = shmget((key_t)2222, 256, 0666);
+  int shm_receive_enc2 = shmget((key_t)2222, sizeof(info_struct), 0666);
 
-  char* data_receive_enc2 = (char*)shmat(shm_receive_enc2, NULL, 0);
-  if(data_receive_enc2 == (char*)(-1)){
+  info_struct* data_receive_enc2 = (info_struct*)shmat(shm_receive_enc2, NULL, 0);
+  if(data_receive_enc2 == (info_struct*)(-1)){
     printf("**Error connecting with shared memory- receive enc2**\n");
     exit(1);
   }
@@ -87,10 +96,10 @@ int main(int argc, char **argv) {
 
   int sem_send_enc1 = semget((key_t)6612, 1, 0666);
 
-  int shm_send_enc1 = shmget((key_t)7712, 256, 0666);
+  int shm_send_enc1 = shmget((key_t)7712, sizeof(info_struct), 0666);
 
-  char* data_send_enc1 = (char*)shmat(shm_send_enc1, NULL, 0);
-  if(data_send_enc1 == (char*)(-1)){
+  info_struct* data_send_enc1 = (info_struct*)shmat(shm_send_enc1, NULL, 0);
+  if(data_send_enc1 == (info_struct*)(-1)){
     printf("**Error connecting with shared memory- send from enc2 to enc1**\n");
     exit(1);
   }
@@ -126,20 +135,22 @@ int main(int argc, char **argv) {
 
   int step=0;
   returned_value temp;
-  char data_from_p1[256];
-  char data_from_p2[256];
+  info_struct data_from_p1;
+  info_struct data_from_p2;
   int confirmation;
   while(1){
     switch(step){
       case 0: //receive from enc1
         printf("**Step 1: waiting for message from p1**\n");
         temp= receive_from_enc1(sem_receive_enc1, data_receive_enc1, sem_flag_enc1);
+
         step = temp.step;
-        strcpy(data_from_p1, temp.input);
+        strcpy(data_from_p1.input, temp.input);
+        strcpy(data_from_p1.hash, temp.hash);
       continue;
       case 1: //send input to enc2
         printf("**Step 2: sending message to enc2**\n");
-        step = send_to_enc2(sem_send_enc2, data_send_enc2, sem_flag_enc2_re, data_from_p1);
+        step = send_to_enc2(sem_send_enc2, data_send_enc2, sem_flag_enc2_re, &data_from_p1);
       continue;
       case 2: //wait for confirmation from enc2
         printf("**Step 3: waiting for confirmation from enc2**\n");
@@ -150,7 +161,7 @@ int main(int argc, char **argv) {
       case 3: //send confirmation to enc1
         printf("**Step 4: sending confirmation to enc1**\n");
         step = send_confirmation_to_enc1(sem_confirm_enc1_re, data_confirm_enc1_re, confirmation, sem_flag_confirm_enc1_re);
-        if(strcmp(temp.input, "TERM\n") == 0){
+        if(strcmp(data_from_p1.input, "TERM\n") == 0){
           break;
         }
       continue;
@@ -160,11 +171,12 @@ int main(int argc, char **argv) {
         printf("**Step 5: waiting for message from p2**\n");
         temp= receive_from_enc2(sem_receive_enc2, data_receive_enc2, sem_flag_enc2);
         step = temp.step;
-        strcpy(data_from_p2, temp.input);
+        strcpy(data_from_p2.input, temp.input);
+        strcpy(data_from_p2.hash, temp.hash);
       continue;
       case 5: //send input to enc1
         printf("**Step 6: sending message to enc1**\n");
-        step = send_to_enc1(sem_send_enc1, data_send_enc1, sem_flag_enc1_re, data_from_p2);
+        step = send_to_enc1(sem_send_enc1, data_send_enc1, sem_flag_enc1_re, &data_from_p2);
       continue;
       case 6: //wait for confirmation from enc1
         printf("**Step 7: waiting for confirmation from enc1**\n");
@@ -175,7 +187,7 @@ int main(int argc, char **argv) {
       case 7: //send confirmation to enc2
         printf("**Step 8: sending confirmation to enc2**\n");
         step = send_confirmation_to_enc2(sem_confirm_enc2_re, data_confirm_enc2_re, confirmation, sem_flag_confirm_enc2_re);
-        if(strcmp(temp.input, "TERM\n") == 0){
+        if(strcmp(data_from_p2.input, "TERM\n") == 0){
           break;
         }
       continue;
@@ -194,28 +206,45 @@ int main(int argc, char **argv) {
 }
 
 // enc1 -> enc2
-returned_value receive_from_enc1(int sem_id, char* data, int flag){
+returned_value receive_from_enc1(int sem_id, info_struct* data, int flag){
   sem_down(flag);
   sem_down(sem_id);
   returned_value temp;
-    if(strcmp(data, "WRONG3")== 0){
+    if(strcmp(data->input, "WRONG3")== 0){
       temp.step=0;
       strcpy(temp.input, "WRONG3");
+      strcpy(temp.hash, "WRONG3");
+
       sem_up(sem_id);
       return temp;
     }
-    printf("from p1: %s\n", data);
-    strcpy(temp.input, data);
-    strcpy(data, "WRONG3");
+    printf("from p1: %s\n", data->input);
+    strcpy(temp.input, data->input);
+    char test[MD5_DIGEST_LENGTH];
+    strcpy(test, data->hash);
+    strcpy(temp.hash, test);
+
+
+    strcpy(data->input, "WRONG3");
+    strcpy(data->hash, "WRONG3");
+
   sem_up(sem_id);
   temp.step= 1;
   return temp;
 }
 
-int send_to_enc2(int sem_id, char* data, int flag, char* input){
+int send_to_enc2(int sem_id, info_struct* data, int flag, info_struct* input){
   sem_down(sem_id);
   sem_up(flag);
-    strcpy(data, input);
+    strcpy(data->input, input->input);
+    for(unsigned int i=0;i<strlen(data->input);i++){
+      int x= rand()%100;
+      if(x >probability){
+        data->input[i] = 'x';
+      }
+    }
+    strcpy(data->hash, input->hash);
+
   sem_up(sem_id);
   return 2;
 }
@@ -238,6 +267,7 @@ int send_confirmation_to_enc1(int sem_id, int* data, int confirmation, int flag)
   if(confirmation == 15){
     return 4;
   }else{
+    printf("message from enc1->enc2 will get re transmited\n");
     return 0;
   }
 }
@@ -245,22 +275,27 @@ int send_confirmation_to_enc1(int sem_id, int* data, int confirmation, int flag)
 
 
 // enc2 -> enc1
-returned_value receive_from_enc2(int sem_id, char* data, int flag){
+returned_value receive_from_enc2(int sem_id, info_struct* data, int flag){
   sem_down(flag);
   sem_down(sem_id);
-    printf("from p2: %s\n", data);
+    printf("from p2: %s\n", data->input);
     returned_value temp;
-    strcpy(temp.input, data);
-    strcpy(data, "WRONG4");
+    strcpy(temp.input, data->input);
+    strcpy(temp.hash, data->hash);
+
+    strcpy(data->input, "WRONG4");
+    strcpy(data->hash, "WRONG4");
+
   sem_up(sem_id);
   temp.step= 5;
   return temp;
 }
 
-int send_to_enc1(int sem_id, char* data, int flag, char* input){
+int send_to_enc1(int sem_id, info_struct* data, int flag, info_struct* input){
   sem_down(sem_id);
   sem_up(flag);
-    strcpy(data, input);
+    strcpy(data->input, input->input);
+    strcpy(data->hash, input->hash);
   sem_up(sem_id);
   return 6;
 }
@@ -283,6 +318,7 @@ int send_confirmation_to_enc2(int sem_id, int* data, int confirmation, int flag)
   if(confirmation == 15){
     return 0;
   }else{
+    printf("message from enc2->enc1 will get re transmited\n");
     return 4;
   }
 }
