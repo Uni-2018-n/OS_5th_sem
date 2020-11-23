@@ -12,13 +12,13 @@ int send_confirmation_to_enc2(int, int*, int, int);
 
 int probability;
 int main(int argc, char **argv) {
-  if(argc > 1){
+  if(argc > 2){
     printf("wrong arguments, please give 0 or non arguments\n");
     return 0;
-  }else if(argc == 0){
-    probability = 50;
+  }else if(argc == 1){
+    probability =20;
   }else{
-    probability = atoi(argv[0]);
+    probability = atoi(argv[1]);
   }
   srand(time(NULL));
   int sem_receive_enc1 = semget((key_t)1112, 1, 0666);
@@ -211,6 +211,7 @@ returned_value receive_from_enc1(int sem_id, info_struct* data, int flag){
   sem_down(sem_id);
   returned_value temp;
     if(strcmp(data->input, "WRONG3")== 0){
+      // printf("IM HERE\n");
       temp.step=0;
       strcpy(temp.input, "WRONG3");
       strcpy(temp.hash, "WRONG3");
@@ -237,12 +238,13 @@ int send_to_enc2(int sem_id, info_struct* data, int flag, info_struct* input){
   sem_down(sem_id);
   sem_up(flag);
     strcpy(data->input, input->input);
-    for(unsigned int i=0;i<strlen(data->input);i++){
-      int x= rand()%100;
-      if(x >probability){
-        data->input[i] = 'x';
-      }
-    }
+    // if(strcmp(data->input, "TERM\n") != 0)
+    // for(unsigned int i=0;i<strlen(data->input);i++){
+    //   int x= rand()%100;
+    //   if(x >probability){
+    //     data->input[i] = 'x';
+    //   }
+    // }
     strcpy(data->hash, input->hash);
 
   sem_up(sem_id);
@@ -295,6 +297,13 @@ int send_to_enc1(int sem_id, info_struct* data, int flag, info_struct* input){
   sem_down(sem_id);
   sem_up(flag);
     strcpy(data->input, input->input);
+    // if(strcmp(data->input, "TERM\n") != 0)
+    // for(unsigned int i=0;i<strlen(data->input);i++){
+    //   int x= rand()%100;
+    //   if(x >probability){
+    //     data->input[i] = 'x';
+    //   }
+    // }
     strcpy(data->hash, input->hash);
   sem_up(sem_id);
   return 6;

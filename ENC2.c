@@ -196,15 +196,18 @@ int confirm_to_chan(int sem_chan, int* data_chan, int flag){
   char hash[MD5_DIGEST_LENGTH];
   MD5(input_from_chan.input, sizeof(input_from_chan.input), hash);
   if(strcmp(input_from_chan.input, "TERM\n") == 0){
+    // printf("terminating\n");
     *data_chan = 15;
     sem_up(sem_chan);
     return 4;
   }else{
     if(memcmp(input_from_chan.hash, hash, MD5_DIGEST_LENGTH) == 0){
+      // printf("accepted\n");
       *data_chan = 15;
       sem_up(sem_chan);
       return 4;
     }else{
+      printf("declined\n");
       *data_chan = 1;
       sem_up(sem_chan);
       return 66;

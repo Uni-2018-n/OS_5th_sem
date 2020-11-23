@@ -159,7 +159,6 @@ int receive_from_p1(int sem_p1, char* data_p1, int sem_chan, info_struct* data_c
 }
 
 int resend_message(int sem_id, info_struct* data, int flag){
-  printf("Test\n");
   sem_down(sem_id);
   sem_up(flag);
     strcpy(data->input, input_from_p1);
