@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
   }
 
   // send confirm from enc2 to enc1
-  int sem_flag_confirm_enc1_re = shmget((key_t)8812, 1, 0666);
+  int sem_flag_confirm_enc1_re = semget((key_t)8812, 1, 0666);
 
   int sem_flag_enc1 = semget((key_t)5512, 1, 0666);
 
@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
   }
 
   // send confirm from enc2 to enc1
-  int sem_flag_confirm_enc2_re = shmget((key_t)8822, 1, 0666);
+  int sem_flag_confirm_enc2_re = semget((key_t)8822, 1, 0666);
 
 
   int step=0;
