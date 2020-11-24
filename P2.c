@@ -5,8 +5,12 @@ returned_value receive_message(int, char*, int);
 
 int main(int argc, char **argv) {
   printf("**P2  Client ID: %ld\n", (long)getpid());
-
+  //connect and initialize semaphores and shared memory
   int sem_id = semget((key_t)1121, 1, 0666 | IPC_CREAT);
+  if(sem_id <0){
+    printf("**Error connecting: sem_id returned -1**\n");
+    exit(1);
+  }
   semctl(sem_id, 0, SETVAL, 1);
 
   int shm_id_send = shmget((key_t)2221, 256, 0666 | IPC_CREAT);
@@ -39,13 +43,21 @@ int main(int argc, char **argv) {
     *data_confirm = 0; // no need for sem cause process aint started yet
   }
 
-    int sem_second_ready = semget((key_t)5521, 1, 0666 | IPC_CREAT);
-    semctl(sem_second_ready, 0, SETVAL, 0);
+  int sem_second_ready = semget((key_t)5521, 1, 0666 | IPC_CREAT);
+  if(sem_second_ready <0){
+    printf("**Error connecting: sem_second_ready returned -1**\n");
+    exit(1);
+  }
+  semctl(sem_second_ready, 0, SETVAL, 0);
 
-    int sem_flag = semget((key_t)22221, 1, 0666 | IPC_CREAT);
-    semctl(sem_flag, 0, SETVAL, 0);
+  int sem_flag = semget((key_t)22221, 1, 0666 | IPC_CREAT);
+  if(sem_flag <0){
+    printf("**Error connecting: sem_flag returned -1**\n");
+    exit(1);
+  }
+  semctl(sem_flag, 0, SETVAL, 0);
 
-  int pid = fork();
+  int pid = fork();//used fork and execvp
   if(pid < 0){
     printf("**PID havent been created**\n");
     exit(1);
@@ -55,18 +67,18 @@ int main(int argc, char **argv) {
     execvp("./ENC2", arg);
   }
 
-  int step = 1;
   returned_value temp;
+  int step = 1;//similar step, switch-case, loop logic with CHAN.c
   while(1){
     switch (step) {
-      case 0:
+      case 0://wait for input and send it to enc
       temp = send_message(sem_id, data_send, sem_flag);
       step = temp.step;
       if(strcmp(temp.input, "TERM\n") == 0){
         break;
       }
       continue;
-      case 1:
+      case 1://wait for enc to send input and print it
       temp = receive_message(sem_id, data_receive, sem_second_ready);
       step = temp.step;
       if(strcmp(temp.input, "TERM\n") == 0){
@@ -76,9 +88,8 @@ int main(int argc, char **argv) {
     }
     break;
   }
-
   int status;
-  waitpid(pid, &status, 0);
+  waitpid(pid, &status, 0);//wait for child to finish and then RMID sem/shm
   semctl(sem_id, 0, IPC_RMID, 0);
   shmdt(data_send);
   shmctl(shm_id_send, IPC_RMID, NULL);
@@ -97,16 +108,14 @@ int main(int argc, char **argv) {
 
 returned_value send_message(int sem_id, char* data, int flag){
   returned_value temp;
-  sem_down(sem_id);
-  sem_up(flag);
-
   printf("Give input from P2:");
   fflush(stdout);
-  fgets(temp.input, 256, stdin);
-  strcpy(data, temp.input);
-  temp.step = 1;
-
+  sem_down(sem_id);//freeze sem and then wait for input so enc will wait too
+  sem_up(flag);
+    fgets(temp.input, 256, stdin);
+    strcpy(data, temp.input);
   sem_up(sem_id);
+  temp.step = 1;
   return temp;
 }
 
@@ -116,9 +125,9 @@ returned_value receive_message(int sem_id, char* data, int sem_second){
   fflush(stdout);
   sem_down(sem_second);
   sem_down(sem_id);
-  printf("%s", data);
-  strcpy(temp.input, data);
+    strcpy(temp.input, data);
   sem_up(sem_id);
-  temp.step = 0;
+  printf("%s", temp.input);
+  temp.step =0;
   return temp;
 }
