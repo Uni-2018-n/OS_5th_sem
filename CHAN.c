@@ -1,5 +1,6 @@
 #include "lib.h"
 #include <time.h>
+
 returned_value receive_from_enc1(int, info_struct*, int);
 int send_to_enc2(int, info_struct*, int, info_struct*);
 returned_value wait_confirmation_from_enc2(int, int*, int);
@@ -16,9 +17,8 @@ int main(int argc, char **argv) {
     printf("wrong arguments, please give 0 or non arguments\n");
     return 0;
   }else if(argc == 1){
-    probability =20;
+    probability =5;
   }else{
-    printf("with probability: %d\n", atoi(argv[1]));
     probability = atoi(argv[1]);
   }
   srand(time(NULL));
@@ -46,8 +46,6 @@ int main(int argc, char **argv) {
 
   int sem_flag_enc1 = semget((key_t)5512, 1, 0666);
 
-  //when receive from enc2 place here
-
   int sem_send_enc2 = semget((key_t)6622, 1, 0666);
 
   int shm_send_enc2 = shmget((key_t)7722, sizeof(info_struct), 0666);
@@ -60,8 +58,6 @@ int main(int argc, char **argv) {
 
   int sem_flag_enc2_re = semget((key_t)11122, 1, 0666);
 
-
-  // confirm to enc2
   int sem_flag_confirm_enc2 = semget((key_t)9922, 1, 0666);
 
   int sem_confirm_enc2 = semget((key_t)3322, 1, 0666);
@@ -118,7 +114,6 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-
   int sem_confirm_enc2_re = semget((key_t)3322, 1, 0666);
 
   int shm_confirm_enc2_re = shmget((key_t)4422, sizeof(int), 0666);
@@ -132,6 +127,7 @@ int main(int argc, char **argv) {
   int sem_flag_confirm_to_enc2 = semget((key_t)8822, 1, 0666);
 
 
+
   int step=0;
   returned_value temp;
   info_struct data_from_p1;
@@ -142,7 +138,6 @@ int main(int argc, char **argv) {
       case 0: //receive from enc1
         printf("**Step 1: waiting for message from p1**\n");
         temp= receive_from_enc1(sem_receive_enc1, data_receive_enc1, sem_flag_enc1);
-
         step = temp.step;
         strcpy(data_from_p1.input, temp.input);
         strcpy(data_from_p1.hash, temp.hash);
@@ -192,7 +187,6 @@ int main(int argc, char **argv) {
       continue;
     }
     break;
-
   }
   shmdt(data_receive_enc1);
   shmdt(data_confirm_enc1_re);
@@ -214,10 +208,6 @@ returned_value receive_from_enc1(int sem_id, info_struct* data, int flag){
     char test[MD5_DIGEST_LENGTH];
     strcpy(test, data->hash);
     strcpy(temp.hash, test);
-
-    strcpy(data->input, "WRONG3");
-    strcpy(data->hash, "WRONG3");
-
   sem_up(sem_id);
   temp.step= 1;
   return temp;
@@ -235,7 +225,6 @@ int send_to_enc2(int sem_id, info_struct* data, int flag, info_struct* input){
       }
     }
     strcpy(data->hash, input->hash);
-
   sem_up(sem_id);
   return 2;
 }
@@ -273,10 +262,6 @@ returned_value receive_from_enc2(int sem_id, info_struct* data, int flag){
     returned_value temp;
     strcpy(temp.input, data->input);
     strcpy(temp.hash, data->hash);
-
-    strcpy(data->input, "WRONG4");
-    strcpy(data->hash, "WRONG4");
-
   sem_up(sem_id);
   temp.step= 5;
   return temp;

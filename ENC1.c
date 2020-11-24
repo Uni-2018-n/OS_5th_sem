@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
 
   char* data_from_p = (char*)shmat(shm_from_p, NULL, 0);
   if(data_from_p == (char*)(-1)){
-    printf("**Error connecting with Shared Memory- From p1**\n");
+    printf("**Error connecting with Shared Memory- From p**\n");
     exit(1);
   }
 
@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
 
   char* data_to_p = (char*)shmat(shm_id_receive, NULL, 0);
   if(data_to_p == (char*)(-1)){
-    printf("**Error Connecting With Shared Memory- data to p1**\n");
+    printf("**Error Connecting With Shared Memory- data to p**\n");
     exit(1);
   }else{
     strcpy(data_to_p, ""); // no need for sem cause process aint started yet
