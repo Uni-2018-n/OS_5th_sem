@@ -18,6 +18,7 @@ int main(int argc, char **argv) {
   }else if(argc == 1){
     probability =20;
   }else{
+    printf("with probability: %d\n", atoi(argv[1]));
     probability = atoi(argv[1]);
   }
   srand(time(NULL));
@@ -41,8 +42,7 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  // send confirm from enc2 to enc1
-  int sem_flag_confirm_enc1_re = semget((key_t)8812, 1, 0666);
+  int sem_flag_confirm_to_enc1= semget((key_t)8812, 1, 0666);
 
   int sem_flag_enc1 = semget((key_t)5512, 1, 0666);
 
@@ -129,8 +129,7 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  // send confirm from enc2 to enc1
-  int sem_flag_confirm_enc2_re = semget((key_t)8822, 1, 0666);
+  int sem_flag_confirm_to_enc2 = semget((key_t)8822, 1, 0666);
 
 
   int step=0;
@@ -160,7 +159,7 @@ int main(int argc, char **argv) {
       continue;
       case 3: //send confirmation to enc1
         printf("**Step 4: sending confirmation to enc1**\n");
-        step = send_confirmation_to_enc1(sem_confirm_enc1_re, data_confirm_enc1_re, confirmation, sem_flag_confirm_enc1_re);
+        step = send_confirmation_to_enc1(sem_confirm_enc1_re, data_confirm_enc1_re, confirmation, sem_flag_confirm_to_enc1);
         if(strcmp(data_from_p1.input, "TERM\n") == 0){
           break;
         }
@@ -186,7 +185,7 @@ int main(int argc, char **argv) {
       continue;
       case 7: //send confirmation to enc2
         printf("**Step 8: sending confirmation to enc2**\n");
-        step = send_confirmation_to_enc2(sem_confirm_enc2_re, data_confirm_enc2_re, confirmation, sem_flag_confirm_enc2_re);
+        step = send_confirmation_to_enc2(sem_confirm_enc2_re, data_confirm_enc2_re, confirmation, sem_flag_confirm_to_enc2);
         if(strcmp(data_from_p2.input, "TERM\n") == 0){
           break;
         }
@@ -210,21 +209,11 @@ returned_value receive_from_enc1(int sem_id, info_struct* data, int flag){
   sem_down(flag);
   sem_down(sem_id);
   returned_value temp;
-    if(strcmp(data->input, "WRONG3")== 0){
-      // printf("IM HERE\n");
-      temp.step=0;
-      strcpy(temp.input, "WRONG3");
-      strcpy(temp.hash, "WRONG3");
-
-      sem_up(sem_id);
-      return temp;
-    }
     printf("from p1: %s\n", data->input);
     strcpy(temp.input, data->input);
     char test[MD5_DIGEST_LENGTH];
     strcpy(test, data->hash);
     strcpy(temp.hash, test);
-
 
     strcpy(data->input, "WRONG3");
     strcpy(data->hash, "WRONG3");
@@ -238,13 +227,13 @@ int send_to_enc2(int sem_id, info_struct* data, int flag, info_struct* input){
   sem_down(sem_id);
   sem_up(flag);
     strcpy(data->input, input->input);
-    // if(strcmp(data->input, "TERM\n") != 0)
-    // for(unsigned int i=0;i<strlen(data->input);i++){
-    //   int x= rand()%100;
-    //   if(x >probability){
-    //     data->input[i] = 'x';
-    //   }
-    // }
+    if(strcmp(data->input, "TERM\n") != 0)
+    for(unsigned int i=0;i<strlen(data->input)-1;i++){
+      int x= rand()%100;
+      if(x <probability){
+        data->input[i] = 'x';
+      }
+    }
     strcpy(data->hash, input->hash);
 
   sem_up(sem_id);
@@ -263,13 +252,13 @@ returned_value wait_confirmation_from_enc2(int sem_id, int* data, int flag){
 
 int send_confirmation_to_enc1(int sem_id, int* data, int confirmation, int flag){
   sem_down(sem_id);
-  sem_down(flag);
+  sem_up(flag);
   *data = confirmation;
   sem_up(sem_id);
   if(confirmation == 15){
     return 4;
   }else{
-    printf("message from enc1->enc2 will get re transmited\n");
+    printf("message from enc1->enc2 will get re transmited, %d\n", confirmation);
     return 0;
   }
 }
@@ -297,13 +286,13 @@ int send_to_enc1(int sem_id, info_struct* data, int flag, info_struct* input){
   sem_down(sem_id);
   sem_up(flag);
     strcpy(data->input, input->input);
-    // if(strcmp(data->input, "TERM\n") != 0)
-    // for(unsigned int i=0;i<strlen(data->input);i++){
-    //   int x= rand()%100;
-    //   if(x >probability){
-    //     data->input[i] = 'x';
-    //   }
-    // }
+    if(strcmp(data->input, "TERM\n") != 0)
+    for(unsigned int i=0;i<strlen(data->input)-1;i++){
+      int x= rand()%100;
+      if(x <probability){
+        data->input[i] = 'x';
+      }
+    }
     strcpy(data->hash, input->hash);
   sem_up(sem_id);
   return 6;
@@ -311,7 +300,7 @@ int send_to_enc1(int sem_id, info_struct* data, int flag, info_struct* input){
 
 returned_value wait_confirmation_from_enc1(int sem_id, int* data, int flag){
   returned_value temp;
-  sem_up(flag);
+  sem_down(flag);
   sem_down(sem_id);
     temp.confirm = *data;
   sem_up(sem_id);
@@ -321,7 +310,7 @@ returned_value wait_confirmation_from_enc1(int sem_id, int* data, int flag){
 
 int send_confirmation_to_enc2(int sem_id, int* data, int confirmation, int flag){
   sem_down(sem_id);
-  sem_down(flag);
+  sem_up(flag);
   *data = confirmation;
   sem_up(sem_id);
   if(confirmation == 15){

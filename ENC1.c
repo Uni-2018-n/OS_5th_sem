@@ -1,22 +1,22 @@
 #include "lib.h"
 
-int receive_from_p1(int, char*, int, info_struct*, int, int);
-int resend_message(int, info_struct*, int);
-int wait_confirmation_from_chan(int, int*);
+int receive_from_p(int, char*, int);
+int send_to_chan(int, info_struct*, int);
+int wait_confirmation_from_chan(int, int*, int);
 int receive_from_chan(int, info_struct*, int);
 int confirm_to_chan(int, int*, int);
-int send_to_p1(int, char*, int);
+int send_to_p(int, char*, int);
 
-char input_from_p1[256];
+char input_from_p[256];
 info_struct input_from_chan;
 
 int main(int argc, char **argv) {
-  int sem_p1_id = semget((key_t)1111, 1, 0666);
+  int sem_p_id = semget((key_t)1111, 1, 0666);
 
-  int shm_from_p1 = shmget((key_t)2211, 256, 0666);
+  int shm_from_p = shmget((key_t)2211, 256, 0666);
 
-  char* data_from_p1 = (char*)shmat(shm_from_p1, NULL, 0);
-  if(data_from_p1 == (char*)(-1)){
+  char* data_from_p = (char*)shmat(shm_from_p, NULL, 0);
+  if(data_from_p == (char*)(-1)){
     printf("**Error connecting with Shared Memory- From p1**\n");
     exit(1);
   }
@@ -25,12 +25,12 @@ int main(int argc, char **argv) {
 
   int shm_id_receive = shmget((key_t)3311, 256, 0666 | IPC_CREAT);
 
-  char* data_to_p1 = (char*)shmat(shm_id_receive, NULL, 0);
-  if(data_to_p1 == (char*)(-1)){
+  char* data_to_p = (char*)shmat(shm_id_receive, NULL, 0);
+  if(data_to_p == (char*)(-1)){
     printf("**Error Connecting With Shared Memory- data to p1**\n");
     exit(1);
   }else{
-    strcpy(data_to_p1, ""); // no need for sem cause process aint started yet
+    strcpy(data_to_p, ""); // no need for sem cause process aint started yet
   }
 
 
@@ -56,12 +56,14 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
+  int sem_flag_confirm_from_chan = semget((key_t)8812, 1, 0666 | IPC_CREAT);
+  semctl(sem_flag_confirm_from_chan, 0 , SETVAL, 0);
+
   int sem_flag_confirm_chan_re = semget((key_t)9912, 1, 0666 | IPC_CREAT);
   semctl(sem_flag_confirm_chan_re, 0, SETVAL, 0);
 
   int sem_flag_chan = semget((key_t)5512, 1, 0666 | IPC_CREAT);
   semctl(sem_flag_chan, 0, SETVAL, 0);
-  sem_up(sem_flag_chan);
 
   int sem_receive_chan = semget((key_t)6612, 1, 0666 | IPC_CREAT);
   semctl(sem_receive_chan, 0, SETVAL, 1);
@@ -85,37 +87,34 @@ int main(int argc, char **argv) {
 	int step = 0;
   while(1){
     switch (step) {
-      case 0: //receive from p1
-        step = receive_from_p1(sem_p1_id, data_from_p1, sem_send_chan, data_send_chan, sem_flag_chan, sem_flag);
+      case 0: //receive from p
+        step = receive_from_p(sem_p_id, data_from_p, sem_flag);
         continue;
-      case 1: //retrive confirmation
-        step = wait_confirmation_from_chan(sem_confirm_chan, data_confirm_chan);
-        if(strcmp(input_from_p1, "TERM\n") == 0){
+      case 1:
+        step = send_to_chan(sem_send_chan, data_send_chan, sem_flag_chan);
+        continue;
+      case 2: //retrive confirmation
+        step = wait_confirmation_from_chan(sem_confirm_chan, data_confirm_chan, sem_flag_confirm_from_chan);
+        if(strcmp(input_from_p, "TERM\n") == 0){
           break;
         }
         continue;
-      case 2: //retrive from chan
+      case 3: //retrive from chan
         step = receive_from_chan(sem_receive_chan, data_receive_chan, sem_flag_chan_re);
         continue;
-      case 3: //send confirmation
+      case 4: //send confirmation
         step = confirm_to_chan(sem_confirm_chan, data_confirm_chan, sem_flag_confirm_chan_re);
         continue;
-      case 4://send to p1
-        step = send_to_p1(sem_p1_id, data_to_p1, sem_second_ready);
+      case 5://send to p
+        step = send_to_p(sem_p_id, data_to_p, sem_second_ready);
         if(strcmp(input_from_chan.input, "TERM\n") ==0){
           break;
         }
         continue;
-      case 55://resend option
-        step = resend_message(sem_send_chan, data_send_chan, sem_flag_chan);
-        continue;
-      case 66://from case2 i retrived falty need to resend
-
-        continue;
     }
     break;
   }
-  shmdt(data_to_p1);
+  shmdt(data_to_p);
   shmctl(shm_id_receive, IPC_RMID, NULL);
 
   semctl(sem_send_chan, 0, IPC_RMID, 0);
@@ -127,6 +126,8 @@ int main(int argc, char **argv) {
 
   shmdt(data_confirm_chan);
   shmctl(shm_confirm_chan, IPC_RMID, NULL);
+
+  semctl(sem_flag_confirm_from_chan, 0, IPC_RMID, 0);
 
   semctl(sem_flag_confirm_chan_re, 0, IPC_RMID, 0);
 
@@ -142,51 +143,43 @@ int main(int argc, char **argv) {
 }
 
 
-int receive_from_p1(int sem_p1, char* data_p1, int sem_chan, info_struct* data_chan, int flag, int flag_p1){
-  sem_down(flag_p1);
-  sem_down(sem_chan);
-  sem_up(flag);
-  sem_down(sem_p1);
-      strcpy(input_from_p1, data_p1);
-      strcpy(data_chan->input, input_from_p1);
-      char hash[MD5_DIGEST_LENGTH];
-      MD5(input_from_p1, sizeof(input_from_p1), hash);
-      strcpy(data_chan->hash, hash);
-      strcpy(data_p1, "WRONG1");
-    sem_up(sem_chan);
-  sem_up(sem_p1);
+int receive_from_p(int sem_p, char* data_p, int flag){
+  sem_down(flag);
+  sem_down(sem_p);
+      strcpy(input_from_p, data_p);
+  sem_up(sem_p);
   return 1;
 }
 
-int resend_message(int sem_id, info_struct* data, int flag){
-  sem_down(sem_id);
+int send_to_chan(int sem_chan, info_struct* data_chan, int flag){
+  sem_down(sem_chan);
   sem_up(flag);
-    strcpy(data->input, input_from_p1);
+    strcpy(data_chan->input, input_from_p);
     char hash[MD5_DIGEST_LENGTH];
-    MD5(input_from_p1, sizeof(input_from_p1), hash);
-    strcpy(data->hash, hash);
-  sem_up(sem_id);
-  return 1;
-}
-
-int wait_confirmation_from_chan(int sem_chan, int* confirm_chan){
-  sem_down(sem_chan);
-  if(*confirm_chan == 1){
-    sem_up(sem_chan);
-    return 55;
-  }
+    MD5(input_from_p, sizeof(input_from_p), hash);
+    strcpy(data_chan->hash, hash);
   sem_up(sem_chan);
   return 2;
+}
+
+int wait_confirmation_from_chan(int sem_chan, int* confirm_chan, int flag){
+  sem_down(flag);
+  sem_down(sem_chan);
+    if(*confirm_chan == 1){
+      sem_up(sem_chan);
+      return 1;
+    }
+  sem_up(sem_chan);
+  return 3;
 }
 
 int receive_from_chan(int sem_chan, info_struct* data_from_chan, int flag){
   sem_down(flag);
   sem_down(sem_chan);
-  strcpy(input_from_chan.input, data_from_chan->input);
-  strcpy(input_from_chan.hash, data_from_chan->hash);
-  strcpy(data_from_chan->input, "WRONG1");
+    strcpy(input_from_chan.input, data_from_chan->input);
+    strcpy(input_from_chan.hash, data_from_chan->hash);
   sem_up(sem_chan);
-  return 3;
+  return 4;
 }
 
 int confirm_to_chan(int sem_chan, int* data_chan, int flag){
@@ -198,24 +191,24 @@ int confirm_to_chan(int sem_chan, int* data_chan, int flag){
   if(strcmp(input_from_chan.input, "TERM\n") == 0){
       *data_chan = 15;
       sem_up(sem_chan);
-      return 4;
+      return 5;
   }else{
-    if(strcmp(input_from_chan.hash, hash) == 0){
+    if(memcmp(input_from_chan.hash, hash, MD5_DIGEST_LENGTH) == 0){
       *data_chan = 15;
       sem_up(sem_chan);
-      return 4;
+      return 5;
     }else{
       *data_chan = 1;
       sem_up(sem_chan);
-      return 66;
+      return 3;
     }
   }
 }
 
-int send_to_p1(int sem_p1, char* data, int sem_flag){
-  sem_down(sem_p1);
+int send_to_p(int sem_p, char* data, int sem_flag){
+  sem_down(sem_p);
   sem_up(sem_flag);
     strcpy(data, input_from_chan.input);
-  sem_up(sem_p1);
+  sem_up(sem_p);
   return 0;
 }
