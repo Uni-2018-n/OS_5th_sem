@@ -304,7 +304,7 @@ int send_to_enc2(int sem_id, info_struct* data, int flag, info_struct* input){
     for(unsigned int i=0;i<strlen(input->input)-1;i++){//if not we go through every letter(except last cause its \n)
       int x= rand()%100;
       if(x <probability){//if we hit a random number lower than the probability
-        input->input[i] = 'x'; //replace it with 'x' so its "corrupted"
+        input->input[i] = 'a' + (rand() % 26); //replace it with a random letter so its "corrupted"
       }
     }
   }
@@ -361,7 +361,7 @@ int send_to_enc1(int sem_id, info_struct* data, int flag, info_struct* input){
     for(unsigned int i=0;i<strlen(input->input)-1;i++){
       int x= rand()%100;
       if(x <probability){
-        input->input[i] = 'x';
+        input->input[i] = 'a' + (rand() % 26);
       }
     }
   }
