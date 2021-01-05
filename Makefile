@@ -1,5 +1,5 @@
 FLAGS = -std=c++11 -Wall -g -o
-SOURCE = main.cpp
+SOURCE = main.cpp classes.cpp functions.cpp
 ITEM = main
 
 run : compile
