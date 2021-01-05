@@ -6,19 +6,26 @@ proccess::proccess(int b){
 }
 
 struct list_struct proccess::insertItem(memory *mem, int pnum, int act){
+  if(act){
+    mem->num_of_r++;
+  }else{
+    mem->num_of_w++;
+  }
   struct list_struct l = mem->mem_update(pnum);
   if(l.pagenum == pnum && l.memindex == -1){//no page fault, was already there
     struct list_struct t;
     t.pagenum= -1;
     t.memindex= -1;
     return t;
-  }else if(l.pagenum == pnum && l.memindex != -1){//case fault, free space available
+  }else if(l.pagenum == pnum && l.memindex != -1){//page fault, free space available
+    mem->num_of_pf++;
     table[hashFunction(pnum)].push_back(l);
     struct list_struct t;
     t.pagenum= -1;
     t.memindex= -1;
     return t;
   }else{ //page fault, need to replace
+    mem->num_of_pf++;
     struct list_struct temp;
     temp.pagenum = pnum;
     temp.memindex = l.memindex;
@@ -61,6 +68,9 @@ int proccess::hashFunction(int x){
 /////////////////////////////////
 memory::memory(int pl){
   mm_frames = pl;
+  num_of_r =0;
+  num_of_w =0;
+  num_of_pf=0;
 }
 struct list_struct memory::mem_update(int pnum){
   list<int> :: iterator i;

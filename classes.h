@@ -31,6 +31,9 @@ class memory{
     deque<int> array;
     list<int> queue;
   public:
+    int num_of_r;
+    int num_of_w;
+    int num_of_pf;
     memory(int pl);
     // ~memory();
     struct list_struct mem_update(int pnum);

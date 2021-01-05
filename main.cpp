@@ -12,7 +12,7 @@ int main(int argc, char **argv){
     alg= 1;
     mm_frames = 100;
     q = 250;
-    max_traces = 1000;
+    max_traces = 10000;
   }else if(argc == 4){
     alg = atoi(argv[1]);
     mm_frames = atoi(argv[2]);
@@ -42,7 +42,8 @@ int main(int argc, char **argv){
       int counter =0;
       while(counter < q){
         string line;
-        if(!getline(bzip, line) || one_counter > max_traces){
+        if(!getline(bzip, line) || one_counter >= max_traces){
+          // one_counter--;//might need to change this
           flag_one= 1;
           break;
         }else{
@@ -83,7 +84,8 @@ int main(int argc, char **argv){
       int counter =0;
       while(counter < q){
         string line;
-        if(!getline(gcc, line) || two_counter > max_traces){
+        if(!getline(gcc, line) || two_counter >= max_traces){
+          // two_counter--;
           flag_two = 1;
           break;
         }else{
@@ -124,5 +126,10 @@ int main(int argc, char **argv){
   }
   bzip.close();
   gcc.close();
+  cout << "Read counter: " << main_memory->num_of_r << endl;
+  cout << "Write counter: " << main_memory->num_of_w << endl;
+  cout << "Page fault counter: " << main_memory->num_of_pf << endl;
+  cout << "Number of traces(combined for both proccesses): " << one_counter+two_counter << endl;
+  cout << "Available frames in memory: " << mm_frames << endl;
 	return 0;
 }
