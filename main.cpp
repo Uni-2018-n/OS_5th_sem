@@ -1,9 +1,13 @@
-#include <iostream>
-#include <fstream>
-#include <string.h>
-#include <stdio.h>
+// #include <iostream>
+// #include <fstream>
+// #include <string.h>
+// #include <stdio.h>
+#include <bits/stdc++.h>
+
 
 using namespace std;
+
+#define PAGE_SIZE 4096
 
 int main(int argc, char **argv){
   int alg, pl_mm, q;
@@ -25,40 +29,82 @@ int main(int argc, char **argv){
   fstream gcc;
   gcc.open("gcc.trace");
 
+  int flag_one =0, flag_two = 0;
+  while(true){
+    if(!flag_one){
+      int counter =0;
+      while(counter < q){
+        string line;
+        if(!getline(bzip, line)){
+          flag_one= 1;
+          break;
+        }else{
+          int temp = 0;
+          string mem= "";
+          while(line[temp] != ' '){
+            mem += line[temp];
+            temp++;
+          }
+          temp++;
+          char action = line[temp];
+          int act;
+          if(action == 'R'){
+            act = 0;
+          }else{
+            act = 1;
+          }
+          int t =(32-log(PAGE_SIZE))/4;
+          if(t != int(t)){
+            mem.resize(t+1);
+          }else{
+            mem.resize(t);
+          }
+          int page = stoi(mem, 0, 16);
 
-  int counter = 0;
-  int flag = 1;
-  while(counter < q*2){
-    if(flag){ // case read first trace
-      flag = 0;
-      string line;
-      getline(bzip, line);
-      int counter = 0;
-      string mem = "";
-      while(line[counter] != ' '){
-        mem += line[counter];
-        counter++;
+          cout << "first: " << page << " " << act << endl;
+          counter++;
+        }
       }
-      counter++;
-      char action = line[counter];
-      cout << "first: " << mem << " " << action << endl;
-    }else{// case read second trace
-      flag = 1;
-      string line;
-      getline(gcc, line);
-      int counter = 0;
-      string mem = "";
-      while(line[counter] != ' '){
-        mem += line[counter];
-        counter++;
-      }
-      counter++;
-      char action = line[counter];
-      cout << "second: " << mem << " " << action << endl;
     }
-    counter++;
-  }
 
+    if(!flag_two){
+      int counter =0;
+      while(counter < q){
+        string line;
+        if(!getline(gcc, line)){
+          flag_two = 1;
+          break;
+        }else{
+          int temp = 0;
+          string mem= "";
+          while(line[temp] != ' '){
+            mem += line[temp];
+            temp++;
+          }
+          temp++;
+          char action = line[temp];
+          int act;
+          if(action == 'R'){
+            act = 0;
+          }else{
+            act = 1;
+          }
+          int t =(32-log(PAGE_SIZE))/4;
+          if(t != int(t)){
+            mem.resize(t+1);
+          }else{
+            mem.resize(t);
+          }
+          int page = stoi(mem, 0, 16);
+          cout << "second: " << page << " " << act << endl;
+          counter++;
+        }
+      }
+    }
+    if(flag_one && flag_two){
+      break;
+    }
+  }
   bzip.close();
   gcc.close();
 	return 0;
