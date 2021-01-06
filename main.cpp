@@ -27,9 +27,9 @@ int main(int argc, char **argv){
   cout << alg  << " " << mm_frames << " "<< q << " " << max_traces << endl;
 
   // if(alg){
-    lru_memory *main_memory= new lru_memory(mm_frames);
+    // lru_memory *main_memory= new lru_memory(mm_frames, (32-log(PAGE_SIZE))/4);
   // }else{
-  // secondchance_memory *main_memory= new secondchance_memory(mm_frames);
+  secondchance_memory *main_memory= new secondchance_memory(mm_frames, (32-log(PAGE_SIZE))/4);
   // }
 
   fstream bzip;
@@ -38,8 +38,6 @@ int main(int argc, char **argv){
   gcc.open("gcc.trace");
   int flag_one =0, flag_two = 0;
   int one_counter=0, two_counter=0;
-  proccess first((32-log(PAGE_SIZE))/4);
-  proccess second((32-log(PAGE_SIZE))/4);
   while(true){
     if(!flag_one){
       int counter =0;
@@ -71,11 +69,7 @@ int main(int argc, char **argv){
             mem.resize(t);
           }
           int page = stoi(mem, 0, 16);
-
-          struct list_struct l = first.insertItem(main_memory, page, act);
-          if(l.pagenum != -1 && l.memindex != -1){
-            second.deleteItem(l.pagenum, l.memindex);
-          }
+          main_memory->insertFirst(page, act);
           // cout << "first: " << page << " " << act << endl;
           counter++;
         }
@@ -113,10 +107,7 @@ int main(int argc, char **argv){
             mem.resize(t);
           }
           int page = stoi(mem, 0, 16);
-          struct list_struct l = second.insertItem(main_memory, page, act);
-          if(l.pagenum != -1 && l.memindex != -1){
-            first.deleteItem(l.pagenum, l.memindex);
-          }
+          main_memory->insertSecond(page, act);
           // cout << "second: " << page << " " << act << endl;
           counter++;
         }

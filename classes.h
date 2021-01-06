@@ -25,9 +25,8 @@ public:
   proccess(int b);
   // ~proccess();
 
-  struct list_struct insertItem(lru_memory *mem, int pnum, int act);
-  struct list_struct insertItem(secondchance_memory *mem, int pnum, int act);
-  int deleteItem(int pnum, int frame);
+  void insertItem(int pnum, int index);
+  int deleteItem(int pnum);
   int hashFunction(int x);
 };
 
@@ -37,13 +36,17 @@ class lru_memory{
     int mm_frames;
     deque<struct mem_item> array;
     list<int> queue;
+    proccess first;
+    proccess second;
   public:
     int num_of_r;
     int num_of_w;
     int num_of_pf;
-    lru_memory(int pl);
+    lru_memory(int pl, int buckets);
     // ~memory();
-    struct list_struct mem_update(int pnum, int act);
+    // struct list_struct mem_update(int pnum, int act);
+    void insertFirst(int pnum, int act);
+    void insertSecond(int pnum, int act);
 };
 
 struct queue_item{
@@ -56,13 +59,16 @@ private:
   int mm_frames;
   deque<struct mem_item> array;
   list<struct queue_item> queue;
+  proccess first;
+  proccess second;
 public:
   int num_of_r;
   int num_of_w;
   int num_of_pf;
-  secondchance_memory(int pl);
+  secondchance_memory(int pl, int buckets);
   // ~memory();
-  struct list_struct mem_update(int pnum, int act);
+  void insertFirst(int pnum, int act);
+  void insertSecond(int pnum, int act);
 };
 
 #endif
