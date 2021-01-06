@@ -12,7 +12,7 @@ int main(int argc, char **argv){
     alg= 1;
     mm_frames = 100;
     q = 250;
-    max_traces = 1000;
+    max_traces = 10000;
   }else if(argc == 4){
     alg = atoi(argv[1]);
     mm_frames = atoi(argv[2]);
@@ -26,8 +26,11 @@ int main(int argc, char **argv){
   }
   cout << alg  << " " << mm_frames << " "<< q << " " << max_traces << endl;
 
-
-  memory *main_memory= new memory(mm_frames);
+  // if(alg){
+    lru_memory *main_memory= new lru_memory(mm_frames);
+  // }else{
+  // secondchance_memory *main_memory= new secondchance_memory(mm_frames);
+  // }
 
   fstream bzip;
   bzip.open("bzip.trace");

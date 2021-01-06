@@ -4,7 +4,8 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-class memory;
+class lru_memory;
+class secondchance_memory;
 
 struct list_struct{
   int pagenum;
@@ -15,6 +16,7 @@ struct mem_item{
   int pagenum;
   int act;
 };
+
 class proccess{
 private:
   int buckets;
@@ -23,13 +25,14 @@ public:
   proccess(int b);
   // ~proccess();
 
-  struct list_struct insertItem(memory *mem, int pnum, int act);
+  struct list_struct insertItem(lru_memory *mem, int pnum, int act);
+  struct list_struct insertItem(secondchance_memory *mem, int pnum, int act);
   int deleteItem(int pnum, int frame);
   int hashFunction(int x);
 };
 
 
-class memory{
+class lru_memory{
   private:
     int mm_frames;
     deque<struct mem_item> array;
@@ -38,9 +41,28 @@ class memory{
     int num_of_r;
     int num_of_w;
     int num_of_pf;
-    memory(int pl);
+    lru_memory(int pl);
     // ~memory();
     struct list_struct mem_update(int pnum, int act);
+};
+
+struct queue_item{
+  int pagenum;
+  int refnum;
+};
+
+class secondchance_memory{
+private:
+  int mm_frames;
+  deque<struct mem_item> array;
+  list<struct queue_item> queue;
+public:
+  int num_of_r;
+  int num_of_w;
+  int num_of_pf;
+  secondchance_memory(int pl);
+  // ~memory();
+  struct list_struct mem_update(int pnum, int act);
 };
 
 #endif
