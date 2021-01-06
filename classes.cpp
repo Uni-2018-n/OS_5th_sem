@@ -6,12 +6,7 @@ proccess::proccess(int b){
 }
 
 struct list_struct proccess::insertItem(memory *mem, int pnum, int act){
-  if(act){
-    mem->num_of_r++;
-  }else{
-    mem->num_of_w++;
-  }
-  struct list_struct l = mem->mem_update(pnum);
+  struct list_struct l = mem->mem_update(pnum, act);
   if(l.pagenum == pnum && l.memindex == -1){//no page fault, was already there
     struct list_struct t;
     t.pagenum= -1;
@@ -72,7 +67,7 @@ memory::memory(int pl){
   num_of_w =0;
   num_of_pf=0;
 }
-struct list_struct memory::mem_update(int pnum){
+struct list_struct memory::mem_update(int pnum, int act){
   list<int> :: iterator i;
   int flag =0;
   for(i = queue.begin(); i!= queue.end(); i++){
@@ -89,14 +84,19 @@ struct list_struct memory::mem_update(int pnum){
     l.memindex = -1;
     return l;
   }else{ // if pnum not in memory
+    // this->num_of_r++;
     queue.push_front(pnum);
     if(int(queue.size()) > mm_frames){
       int temp;
-      temp = *(queue.end());
+      temp = queue.back();
       queue.pop_back();
       for(int j=0; j<mm_frames;j++){
-        if(array[j] == temp){
-          array[j] = pnum;
+        if(array[j].pagenum == temp){
+          if(array[j].act == 1){
+            this->num_of_w++;
+          }
+          array[j].pagenum = pnum;
+          array[j].act = act;
           struct list_struct l;
           l.pagenum = pnum;
           l.memindex = j;
@@ -104,7 +104,10 @@ struct list_struct memory::mem_update(int pnum){
         }
       }
     }else{
-      array.push_back(pnum);
+      struct mem_item t;
+      t.pagenum = pnum;
+      t.act = act;
+      array.push_back(t);
       struct list_struct l;
       l.pagenum = pnum;
       l.memindex = array.size();

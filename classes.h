@@ -11,6 +11,10 @@ struct list_struct{
   int memindex;
 };
 
+struct mem_item{
+  int pagenum;
+  int act;
+};
 class proccess{
 private:
   int buckets;
@@ -28,7 +32,7 @@ public:
 class memory{
   private:
     int mm_frames;
-    deque<int> array;
+    deque<struct mem_item> array;
     list<int> queue;
   public:
     int num_of_r;
@@ -36,7 +40,7 @@ class memory{
     int num_of_pf;
     memory(int pl);
     // ~memory();
-    struct list_struct mem_update(int pnum);
+    struct list_struct mem_update(int pnum, int act);
 };
 
 #endif
