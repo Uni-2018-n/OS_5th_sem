@@ -40,20 +40,19 @@ int main(int argc, char **argv){
 }
 
 void rlu_implementation(int mm_frames, int q, int max_traces){
-  lru_memory *main_memory= new lru_memory(mm_frames, (32-log(PAGE_SIZE))/4);
+  lru_memory *main_memory= new lru_memory(mm_frames, mm_frames);
   fstream bzip;
   bzip.open("bzip.trace");
   fstream gcc;
   gcc.open("gcc.trace");
   int flag_one =0, flag_two = 0;
-  int one_counter=0, two_counter=0;
+  int counter_t=0;
   while(true){
     if(!flag_one){
       int counter =0;
       while(counter < q){
         string line;
-        if(!getline(bzip, line) || one_counter >= max_traces){
-          // one_counter--;//might need to change this
+        if(!getline(bzip, line) || counter_t >= max_traces){
           flag_one= 1;
           break;
         }else{
@@ -79,10 +78,9 @@ void rlu_implementation(int mm_frames, int q, int max_traces){
           }
           int page = stoi(mem, 0, 16);
           main_memory->insertFirst(page, act);
-          // cout << "first: " << page << " " << act << endl;
           counter++;
         }
-        one_counter++;
+        counter_t++;
       }
     }
 
@@ -90,8 +88,7 @@ void rlu_implementation(int mm_frames, int q, int max_traces){
       int counter =0;
       while(counter < q){
         string line;
-        if(!getline(gcc, line) || two_counter >= max_traces){
-          // two_counter--;
+        if(!getline(gcc, line) || counter_t >= max_traces){
           flag_two = 1;
           break;
         }else{
@@ -117,10 +114,9 @@ void rlu_implementation(int mm_frames, int q, int max_traces){
           }
           int page = stoi(mem, 0, 16);
           main_memory->insertSecond(page, act);
-          // cout << "second: " << page << " " << act << endl;
           counter++;
         }
-        two_counter++;
+        counter_t++;
       }
     }
     if(flag_one && flag_two){
@@ -132,25 +128,24 @@ void rlu_implementation(int mm_frames, int q, int max_traces){
   cout << "Read counter: " << main_memory->num_of_r << endl;
   cout << "Write counter: " << main_memory->num_of_w << endl;
   cout << "Page fault counter: " << main_memory->num_of_pf << endl;
-  cout << "Number of traces(combined for both proccesses): " << one_counter+two_counter << endl;
+  cout << "Number of traces(combined for both proccesses): " << counter_t << endl;
   cout << "Available frames in memory: " << mm_frames << endl;
 }
 
 void secondchance_implementation(int mm_frames, int q, int max_traces){
-  secondchance_memory *main_memory= new secondchance_memory(mm_frames, (32-log(PAGE_SIZE))/4);
+  secondchance_memory *main_memory= new secondchance_memory(mm_frames, mm_frames);
   fstream bzip;
   bzip.open("bzip.trace");
   fstream gcc;
   gcc.open("gcc.trace");
   int flag_one =0, flag_two = 0;
-  int one_counter=0, two_counter=0;
+  int counter_t=0;
   while(true){
     if(!flag_one){
       int counter =0;
       while(counter < q){
         string line;
-        if(!getline(bzip, line) || one_counter >= max_traces){
-          // one_counter--;//might need to change this
+        if(!getline(bzip, line) || counter_t >= max_traces){
           flag_one= 1;
           break;
         }else{
@@ -176,10 +171,9 @@ void secondchance_implementation(int mm_frames, int q, int max_traces){
           }
           int page = stoi(mem, 0, 16);
           main_memory->insertFirst(page, act);
-          // cout << "first: " << page << " " << act << endl;
           counter++;
         }
-        one_counter++;
+        counter_t++;
       }
     }
 
@@ -187,8 +181,7 @@ void secondchance_implementation(int mm_frames, int q, int max_traces){
       int counter =0;
       while(counter < q){
         string line;
-        if(!getline(gcc, line) || two_counter >= max_traces){
-          // two_counter--;
+        if(!getline(gcc, line) || counter_t >= max_traces){
           flag_two = 1;
           break;
         }else{
@@ -214,10 +207,9 @@ void secondchance_implementation(int mm_frames, int q, int max_traces){
           }
           int page = stoi(mem, 0, 16);
           main_memory->insertSecond(page, act);
-          // cout << "second: " << page << " " << act << endl;
           counter++;
         }
-        two_counter++;
+        counter_t++;
       }
     }
     if(flag_one && flag_two){
@@ -229,6 +221,6 @@ void secondchance_implementation(int mm_frames, int q, int max_traces){
   cout << "Read counter: " << main_memory->num_of_r << endl;
   cout << "Write counter: " << main_memory->num_of_w << endl;
   cout << "Page fault counter: " << main_memory->num_of_pf << endl;
-  cout << "Number of traces(combined for both proccesses): " << one_counter+two_counter << endl;
+  cout << "Number of traces(combined for both proccesses): " << counter_t << endl;
   cout << "Available frames in memory: " << mm_frames << endl;
 }

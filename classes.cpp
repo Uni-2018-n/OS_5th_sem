@@ -206,11 +206,12 @@ void secondchance_memory::insertSecond(int pnum, int act){
     }
   }
   if(flag){ //if pnum already in memory
-    queue.erase(i);
-    struct queue_item t;
-    t.pagenum = pnum;
-    t.refnum =1;
-    queue.push_front(t);
+    // queue.erase(i);
+    // struct queue_item t;
+    // t.pagenum = pnum;
+    // t.refnum =1;
+    // queue.push_front(t);
+    (*i).refnum= 1;
   }else{ // if pnum not in memory
     num_of_pf++;
     num_of_r++;
@@ -218,17 +219,16 @@ void secondchance_memory::insertSecond(int pnum, int act){
       int fl = 1;
       list<struct queue_item> :: iterator i;
       while(fl){
-        list<struct queue_item> temp;
-        for(i = queue.begin(); i != queue.end(); i++){
+        // list<struct queue_item> temp;
+        for(i = queue.begin(); i != queue.end(); i--){
           if((*i).refnum == 0){
             fl =0;
             break;
           }else{
-            (*i).refnum--;
-            temp.push_front((*i));//might need to push front here
+            (*i).refnum= 0;
+            // temp.push_front((*i));//might need to push front here
           }
         }
-        queue = temp;
       }
       int temp = (*i).pagenum;
       int victim = second.deleteItem(temp);
@@ -241,11 +241,12 @@ void secondchance_memory::insertSecond(int pnum, int act){
       array[victim].pagenum = pnum;
       array[victim].act = act;
       second.insertItem(pnum, victim);
+      (*i).pagenum = pnum;
     }else if(int(queue.size()) < mm_frames){//incase empty space in memory
       {
         struct queue_item t;
         t.pagenum = pnum;
-        t.refnum = 1;
+        t.refnum = 0;
         queue.push_front(t);
       }
       struct mem_item t;
