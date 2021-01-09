@@ -16,7 +16,7 @@ int main(int argc, char **argv){
     alg= 1;
     mm_frames = 100;
     q = 250;
-    max_traces = 10000;
+    max_traces = 20000;
   }else if(argc == 4){
     alg = atoi(argv[1]);
     mm_frames = atoi(argv[2]);

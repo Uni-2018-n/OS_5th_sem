@@ -28,6 +28,17 @@ int proccess::deleteItem(int pnum){
   return -1;
 }
 
+int proccess::searchItem(int pnum){
+  int index = hashFunction(pnum);
+  list<struct list_struct> :: iterator i;
+  for(i=table[index].begin(); i != table[index].end(); i++){
+    if((*i).pagenum == pnum){
+      return 1;
+    }
+  }
+  return 0;
+}
+
 int proccess::hashFunction(int x){
   char temp[32];
   sprintf(temp, "%d", x);
@@ -48,16 +59,9 @@ lru_memory::lru_memory(int pl, int buckets):
 }
 
 void lru_memory::insertFirst(int pnum, int act){
-  list<int> :: iterator i;
-  int flag =0;
-  for(i = queue.begin(); i!= queue.end(); i++){
-    if((*i) == pnum){
-      flag =1;
-      break;
-    }
-  }
+  int flag = first.searchItem(pnum);
   if(flag){ //if pnum already in memory
-    queue.erase(i);
+    queue.remove(pnum);
     queue.push_front(pnum);
   }else{ // if pnum not in memory
     num_of_pf++;
@@ -67,7 +71,7 @@ void lru_memory::insertFirst(int pnum, int act){
       int temp;
       temp = queue.back();
       queue.pop_back();
-      int victim = first.deleteItem(temp);
+      int victim = first.deleteItem(temp);//TODO: this could be more efficient if we add pid number inside memory
       if(victim == -1){
         victim = second.deleteItem(temp);
       }
@@ -88,16 +92,16 @@ void lru_memory::insertFirst(int pnum, int act){
 }
 
 void lru_memory::insertSecond(int pnum, int act){
-  list<int> :: iterator i;
-  int flag =0;
-  for(i = queue.begin(); i!= queue.end(); i++){
-    if((*i) == pnum){
-      flag =1;
-      break;
-    }
-  }
+  // list<int> :: iterator i;
+  int flag = second.searchItem(pnum); //=0;
+  // for(i = queue.begin(); i!= queue.end(); i++){
+  //   if((*i) == pnum){
+  //     flag =1;
+  //     break;
+  //   }
+  // }
   if(flag){ //if pnum already in memory
-    queue.erase(i);
+    queue.remove(pnum); //erase(i);
     queue.push_front(pnum);
   }else{ // if pnum not in memory
     num_of_pf++;

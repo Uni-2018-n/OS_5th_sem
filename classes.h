@@ -27,6 +27,7 @@ public:
 
   void insertItem(int pnum, int index);
   int deleteItem(int pnum);
+  int searchItem(int pnum);
   int hashFunction(int x);
 };
 
