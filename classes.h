@@ -53,6 +53,7 @@ class lru_memory{
 struct queue_item{
   int pagenum;
   int refnum;
+  int pos;
 };
 
 class secondchance_memory{
