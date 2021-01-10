@@ -1,3 +1,37 @@
-* https://www.programming9.com/programs/c-programs/285-page-replacement-programs-in-c
-* LRU: 416
-* Second change: 418
+Αντωνης Καλαμακης SDI1800056
+
+TODO: free memory
+
+for class proccess:
+this class is used as a hash table.
+we have a list table that is intialized with size int buckets.
+with the functions insert, delete, search we search this hash table.
+the user must give the page number to the functions(and to insert we need also
+the index that the page is in our main memory). then the functions hash the
+numbers themselves and to the nessesary actions. Function search returns if the
+page is inside the specific hash table.
+
+For class lru_memory and secondchance_memory:
+Here we have two similar classes to simulate our memory.
+The first one finds a victim based on the lru replacement algorithm and the
+second one based on second chance replacement algorithm.
+To find that victim i used a list named queue(for each class i have diffrent
+variables inside the struct, everything that the algorithms need to work).
+I use the queue to run through it and find who do i need to replace inside the
+memory.
+Here i have 2 proccesses stored so it is easy for me to use it without needing
+to pass it as an argument in the two insert functions.
+for both of the procceses its good to mention that when i create the memory i
+pass the memory frame length to the to proccesses as bucket length.
+Also in this class i have 3 public counters for the desired statistics and two
+functions that help me insert items that come from each trace.
+
+In the structs lru_queue_item and queue_item i have a member named htm that
+tells me in which hash table this specific page comes from(first or second)
+so i wont need to search each hash table every time.
+
+My memory also has a deque called array, this is used as deque cause i found
+out that i could easily index the array and find the desired index without
+scanning all the array. Here we store the pagenumber and the act. Here act
+simulates the dirty bit used to see if we need to re-write the page into the
+disk or not. Named it act cause from the trace txt's we have this as an action...

@@ -23,7 +23,7 @@ private:
   list<struct list_struct> *table;
 public:
   proccess(int b);
-  // ~proccess();
+  ~proccess();
 
   void insertItem(int pnum, int index);
   int deleteItem(int pnum);
@@ -31,12 +31,16 @@ public:
   int hashFunction(int x);
 };
 
+struct lru_queue_item{
+  int pagenum;
+  int htn;
+};
 
 class lru_memory{
   private:
     int mm_frames;
     deque<struct mem_item> array;
-    list<int> queue;
+    list<struct lru_queue_item> queue;
     proccess first;
     proccess second;
   public:
@@ -44,7 +48,7 @@ class lru_memory{
     int num_of_w;
     int num_of_pf;
     lru_memory(int pl, int buckets);
-    // ~memory();
+
     // struct list_struct mem_update(int pnum, int act);
     void insertFirst(int pnum, int act);
     void insertSecond(int pnum, int act);

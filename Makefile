@@ -14,6 +14,7 @@ compile : $(SOURCE)
 
 clean :
 	-rm $(ITEM)
+	-rm *.o
 
 compress: $(SOURCE)
 	mkdir $(ITEM)_$(USER)

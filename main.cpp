@@ -4,7 +4,7 @@ using namespace std;
 
 #define PAGE_SIZE 4096
 
-void rlu_implementation(int mm_frames, int q, int max_traces);
+void lru_implementation(int mm_frames, int q, int max_traces);
 void secondchance_implementation(int mm_frames, int q, int max_traces);
 
 
@@ -31,7 +31,7 @@ int main(int argc, char **argv){
   cout << alg  << " " << mm_frames << " "<< q << " " << max_traces << endl;
 
   if(alg){
-    rlu_implementation(mm_frames, q, max_traces);
+    lru_implementation(mm_frames, q, max_traces);
   }else{
     secondchance_implementation(mm_frames, q, max_traces);
   }
@@ -39,8 +39,8 @@ int main(int argc, char **argv){
 	return 0;
 }
 
-void rlu_implementation(int mm_frames, int q, int max_traces){
-  lru_memory *main_memory= new lru_memory(mm_frames, mm_frames);
+void lru_implementation(int mm_frames, int q, int max_traces){
+  lru_memory main_memory(mm_frames, mm_frames);
   fstream bzip;
   bzip.open("bzip.trace");
   fstream gcc;
@@ -77,7 +77,7 @@ void rlu_implementation(int mm_frames, int q, int max_traces){
             mem.resize(t);
           }
           int page = stoi(mem, 0, 16);
-          main_memory->insertFirst(page, act);
+          main_memory.insertFirst(page, act);
           counter++;
         }
         counter_t++;
@@ -113,7 +113,7 @@ void rlu_implementation(int mm_frames, int q, int max_traces){
             mem.resize(t);
           }
           int page = stoi(mem, 0, 16);
-          main_memory->insertSecond(page, act);
+          main_memory.insertSecond(page, act);
           counter++;
         }
         counter_t++;
@@ -125,15 +125,15 @@ void rlu_implementation(int mm_frames, int q, int max_traces){
   }
   bzip.close();
   gcc.close();
-  cout << "Read counter: " << main_memory->num_of_r << endl;
-  cout << "Write counter: " << main_memory->num_of_w << endl;
-  cout << "Page fault counter: " << main_memory->num_of_pf << endl;
+  cout << "Read counter: " << main_memory.num_of_r << endl;
+  cout << "Write counter: " << main_memory.num_of_w << endl;
+  cout << "Page fault counter: " << main_memory.num_of_pf << endl;
   cout << "Number of traces(combined for both proccesses): " << counter_t << endl;
   cout << "Available frames in memory: " << mm_frames << endl;
 }
 
 void secondchance_implementation(int mm_frames, int q, int max_traces){
-  secondchance_memory *main_memory= new secondchance_memory(mm_frames, mm_frames);
+  secondchance_memory main_memory(mm_frames, mm_frames);
   fstream bzip;
   bzip.open("bzip.trace");
   fstream gcc;
@@ -170,7 +170,7 @@ void secondchance_implementation(int mm_frames, int q, int max_traces){
             mem.resize(t);
           }
           int page = stoi(mem, 0, 16);
-          main_memory->insertFirst(page, act);
+          main_memory.insertFirst(page, act);
           counter++;
         }
         counter_t++;
@@ -206,7 +206,7 @@ void secondchance_implementation(int mm_frames, int q, int max_traces){
             mem.resize(t);
           }
           int page = stoi(mem, 0, 16);
-          main_memory->insertSecond(page, act);
+          main_memory.insertSecond(page, act);
           counter++;
         }
         counter_t++;
@@ -218,9 +218,9 @@ void secondchance_implementation(int mm_frames, int q, int max_traces){
   }
   bzip.close();
   gcc.close();
-  cout << "Read counter: " << main_memory->num_of_r << endl;
-  cout << "Write counter: " << main_memory->num_of_w << endl;
-  cout << "Page fault counter: " << main_memory->num_of_pf << endl;
+  cout << "Read counter: " << main_memory.num_of_r << endl;
+  cout << "Write counter: " << main_memory.num_of_w << endl;
+  cout << "Page fault counter: " << main_memory.num_of_pf << endl;
   cout << "Number of traces(combined for both proccesses): " << counter_t << endl;
   cout << "Available frames in memory: " << mm_frames << endl;
 }
