@@ -92,16 +92,9 @@ void lru_memory::insertFirst(int pnum, int act){
 }
 
 void lru_memory::insertSecond(int pnum, int act){
-  // list<int> :: iterator i;
-  int flag = second.searchItem(pnum); //=0;
-  // for(i = queue.begin(); i!= queue.end(); i++){
-  //   if((*i) == pnum){
-  //     flag =1;
-  //     break;
-  //   }
-  // }
+  int flag = second.searchItem(pnum);
   if(flag){ //if pnum already in memory
-    queue.remove(pnum); //erase(i);
+    queue.remove(pnum);
     queue.push_front(pnum);
   }else{ // if pnum not in memory
     num_of_pf++;
@@ -140,20 +133,15 @@ secondchance_memory::secondchance_memory(int pl, int buckets):
 }
 
 void secondchance_memory::insertFirst(int pnum, int act){
-  list<struct queue_item> :: iterator i;
-  int flag =0;
-  for(i = queue.begin(); i!= queue.end(); i++){
-    if((*i).pagenum == pnum){
-      flag =1;
-      break;
-    }
-  }
+  int flag = first.searchItem(pnum);
   if(flag){ //if pnum already in memory
-    queue.erase(i);
-    struct queue_item t;
-    t.pagenum = pnum;
-    t.refnum =1;
-    queue.push_front(t);
+    list<struct queue_item> :: iterator i;
+    for(i = queue.begin(); i!= queue.end(); i++){
+      if((*i).pagenum == pnum){
+        break;
+      }
+    }
+    (*i).refnum = 1;
   }else{ // if pnum not in memory
     num_of_pf++;
     num_of_r++;
@@ -201,20 +189,14 @@ void secondchance_memory::insertFirst(int pnum, int act){
 }
 
 void secondchance_memory::insertSecond(int pnum, int act){
-  list<struct queue_item> :: iterator i;
-  int flag =0;
-  for(i = queue.begin(); i!= queue.end(); i++){
-    if((*i).pagenum == pnum){
-      flag =1;
-      break;
-    }
-  }
+  int flag = second.searchItem(pnum);
   if(flag){ //if pnum already in memory
-    // queue.erase(i);
-    // struct queue_item t;
-    // t.pagenum = pnum;
-    // t.refnum =1;
-    // queue.push_front(t);
+    list<struct queue_item> :: iterator i;
+    for(i = queue.begin(); i!= queue.end(); i++){
+      if((*i).pagenum == pnum){
+        break;
+      }
+    }
     (*i).refnum= 1;
   }else{ // if pnum not in memory
     num_of_pf++;
@@ -230,7 +212,6 @@ void secondchance_memory::insertSecond(int pnum, int act){
             break;
           }else{
             (*i).refnum= 0;
-            // temp.push_front((*i));//might need to push front here
           }
         }
       }
