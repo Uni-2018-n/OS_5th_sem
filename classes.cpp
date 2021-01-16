@@ -2,11 +2,7 @@
 
 proccess::proccess(int b){
   buckets = b;
-  table = new list<struct list_struct>[buckets];
-}
-
-proccess::~proccess(){
-  // delete table;
+  table.resize(b);
 }
 
 void proccess::insertItem(int pnum, int index){
@@ -17,12 +13,14 @@ void proccess::insertItem(int pnum, int index){
 int proccess::deleteItem(int pnum){
   int index = hashFunction(pnum);
   list<struct list_struct> :: iterator i;
+  int flag =0;
   for(i=table[index].begin(); i != table[index].end();i++){
     if((*i).pagenum == pnum){
+      flag =1;
       break;
     }
   }
-  if(i != table[index].end()){
+  if(flag){
     int t= (*i).memindex;
     table[index].erase(i);
     return t;
@@ -70,13 +68,14 @@ void lru_memory::insertFirst(int pnum, int act){
         break;
       }
     }
-    queue.erase(i);
-    struct lru_queue_item t= {pnum, 0};
-    queue.push_front(t);
+    if((*i).dirty_bit == 0){
+      (*i).dirty_bit = act;
+    }
+    queue.splice(queue.begin(), queue, i);
   }else{ // if pnum not in memory
     num_of_pf++;
     num_of_r++;
-    struct lru_queue_item t= {pnum, 0};
+    struct lru_queue_item t= {pnum, 0, act};
     queue.push_front(t);
     if(int(queue.size()) > mm_frames){//incase main memory is full we need to place our trace in a victims location
       struct lru_queue_item temp = queue.back();
@@ -87,13 +86,13 @@ void lru_memory::insertFirst(int pnum, int act){
       }else{
         victim = first.deleteItem(temp.pagenum);
       }
-      if(array[victim].act == 1){
+      if(temp.dirty_bit == 1){
         num_of_w++;
       }
-      array[victim] = {pnum, act};
+      array[victim] = {pnum};
       first.insertItem(pnum, victim);
     }else{//incase empty space in memory
-      struct mem_item t = {pnum, act};
+      struct mem_item t = {pnum};
       array.push_back(t);
       first.insertItem(pnum, array.size()-1);
     }
@@ -110,13 +109,14 @@ void lru_memory::insertSecond(int pnum, int act){
         break;
       }
     }
-    queue.erase(i);
-    struct lru_queue_item t= {pnum, 1};
-    queue.push_front(t);
+    if((*i).dirty_bit == 0){
+      (*i).dirty_bit = act;
+    }
+    queue.splice(queue.begin(), queue, i);
   }else{ // if pnum not in memory
     num_of_pf++;
     num_of_r++;
-    struct lru_queue_item t= {pnum, 1};
+    struct lru_queue_item t= {pnum, 1, act};
     queue.push_front(t);
     if(int(queue.size()) > mm_frames){//incase main memory is full we need to place our trace in a victims location
       struct lru_queue_item temp= queue.back();
@@ -127,13 +127,13 @@ void lru_memory::insertSecond(int pnum, int act){
       }else{
         victim = first.deleteItem(temp.pagenum);
       }
-      if(array[victim].act == 1){
+      if(temp.dirty_bit == 1){
         num_of_w++;
       }
-      array[victim] = {pnum, act};
+      array[victim] = {pnum};
       second.insertItem(pnum, victim);
     }else{//incase empty space in memory
-      struct mem_item t = {pnum, act};
+      struct mem_item t = {pnum};
       array.push_back(t);
       second.insertItem(pnum, array.size()-1);
     }
@@ -159,6 +159,9 @@ void secondchance_memory::insertFirst(int pnum, int act){
       }
     }
     (*i).refnum = 1;
+    if((*i).dirty_bit == 0){
+      (*i).dirty_bit = act;
+    }
   }else{ // if pnum not in memory
     num_of_pf++;
     num_of_r++;
@@ -182,20 +185,23 @@ void secondchance_memory::insertFirst(int pnum, int act){
       }else{
         victim = first.deleteItem(temp);
       }
-      if(array[victim].act == 1){
+      if((*i).dirty_bit == 1){
         num_of_w++;
       }
 
-      (*i) = {pnum, 0, 0};//replace in memory, in queue and update page table
-      array[victim] = {pnum, act};
+      queue.erase(i);
+      struct queue_item qt = {pnum, 0, 0, act};
+      queue.push_back(qt);
+
+      array[victim] = {pnum};
       first.insertItem(pnum, victim);
     }else if(int(queue.size()) < mm_frames){//incase empty space in memory
-      struct mem_item t = {pnum, act};
+      struct mem_item t = {pnum};
       array.push_back(t);
       first.insertItem(pnum, array.size()-1);
 
-      struct queue_item qt = {pnum, 1, 0};
-      queue.push_front(qt);
+      struct queue_item qt = {pnum, 0, 0, act};
+      queue.push_back(qt);
     }
   }
 }
@@ -211,6 +217,9 @@ void secondchance_memory::insertSecond(int pnum, int act){
       }
     }
     (*i).refnum = 1;
+    if((*i).dirty_bit == 0){
+      (*i).dirty_bit = act;
+    }
   }else{ // if pnum not in memory
     num_of_pf++;
     num_of_r++;
@@ -234,19 +243,23 @@ void secondchance_memory::insertSecond(int pnum, int act){
       }else{
         victim = first.deleteItem(temp);
       }
-      if(array[victim].act == 1){
+      if((*i).dirty_bit == 1){
         num_of_w++;
       }
-      (*i) = {pnum, 0, 1}; //replace in memory, in queue and update page table
-      array[victim] = {pnum, act};
+
+      queue.erase(i);
+      struct queue_item qt = {pnum, 0, 1, act};
+      queue.push_back(qt);
+
+      array[victim] = {pnum};
       second.insertItem(pnum, victim);
     }else if(int(queue.size()) < mm_frames){//incase empty space in memory
-      struct mem_item t = {pnum, act};
+      struct mem_item t = {pnum};
       array.push_back(t);//add it to the first available location in array
       second.insertItem(pnum, array.size()-1);//and in pt
 
-      struct queue_item qt = {pnum, 1, 1};//and in queue
-      queue.push_front(qt);
+      struct queue_item qt = {pnum, 0, 1, act};//and in queue
+      queue.push_back(qt);
     }
   }
 }

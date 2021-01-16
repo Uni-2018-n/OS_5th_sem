@@ -14,13 +14,12 @@ struct list_struct{
 
 struct mem_item{
   int pagenum;
-  int act;
 };
 
 class proccess{
 private:
   int buckets;
-  list<struct list_struct> *table;
+  vector<list<struct list_struct>> table;
 public:
   proccess(int b);
   ~proccess();
@@ -34,6 +33,7 @@ public:
 struct lru_queue_item{
   int pagenum;
   int htn;
+  int dirty_bit;
 };
 
 class lru_memory{
@@ -58,6 +58,7 @@ struct queue_item{
   int pagenum;
   int refnum;
   int pos;
+  int dirty_bit;
 };
 
 class secondchance_memory{

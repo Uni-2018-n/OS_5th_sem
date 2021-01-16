@@ -17,6 +17,11 @@ int main(int argc, char **argv){
     mm_frames = 100;
     q = 250;
     max_traces = 20000;
+  }else if(argc == 2){
+    alg = atoi(argv[1]);
+    mm_frames = 100;
+    q = 250;
+    max_traces = 20000;
   }else if(argc == 4){
     alg = atoi(argv[1]);
     mm_frames = atoi(argv[2]);
