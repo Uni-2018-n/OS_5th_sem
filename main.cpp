@@ -76,11 +76,7 @@ void lru_implementation(int mm_frames, int q, int max_traces){
             act = 1;
           }
           int t =(32-log(PAGE_SIZE))/4;
-          if(t != int(t)){
-            mem.resize(t+1);
-          }else{
-            mem.resize(t);
-          }
+          mem.resize(t);
           int page = stoi(mem, 0, 16);
           main_memory.insertFirst(page, act);
           counter++;
@@ -112,11 +108,7 @@ void lru_implementation(int mm_frames, int q, int max_traces){
             act = 1;
           }
           int t =(32-log(PAGE_SIZE))/4;
-          if(t != int(t)){
-            mem.resize(t+1);
-          }else{
-            mem.resize(t);
-          }
+          mem.resize(t);
           int page = stoi(mem, 0, 16);
           main_memory.insertSecond(page, act);
           counter++;
@@ -169,11 +161,7 @@ void secondchance_implementation(int mm_frames, int q, int max_traces){
             act = 1;
           }
           int t =(32-log(PAGE_SIZE))/4;
-          if(t != int(t)){
-            mem.resize(t+1);
-          }else{
-            mem.resize(t);
-          }
+          mem.resize(t);
           int page = stoi(mem, 0, 16);
           main_memory.insertFirst(page, act);
           counter++;
@@ -205,11 +193,7 @@ void secondchance_implementation(int mm_frames, int q, int max_traces){
             act = 1;
           }
           int t =(32-log(PAGE_SIZE))/4;
-          if(t != int(t)){
-            mem.resize(t+1);
-          }else{
-            mem.resize(t);
-          }
+          mem.resize(t);
           int page = stoi(mem, 0, 16);
           main_memory.insertSecond(page, act);
           counter++;
